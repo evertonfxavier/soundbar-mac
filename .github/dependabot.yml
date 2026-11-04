@@ -22,3 +22,6 @@ updates:
       # typescript-eslint does not support TypeScript 7 yet: move both together
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # the pipeline and the README say Node 22: the types must follow the Node that runs the code, not the newest one
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']

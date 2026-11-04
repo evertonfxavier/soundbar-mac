@@ -20,9 +20,7 @@ permissions:
 
 concurrency:
   # A manual run does not share a queue with the pushes to main, so it can never take the place of a release that waits.
-  # The "v2" is there on purpose: a few runs of the first day stayed "queued" for good (GitHub neither runs nor cancels
-  # them) and kept the old group busy, so new runs waited behind them. It can go once those runs are gone.
-  group: v2-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   # A newer push to a pull request replaces the older run. On main the run that is going is never cut short, and of the
   # runs that wait only the newest is kept: the merge that was left out goes out in the release of the next one.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -34,7 +32,7 @@ defaults:
 jobs:
   version:
     name: Version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -73,7 +71,7 @@ jobs:
   extension:
     name: Chrome extension
     needs: version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       SOUNDBAR_VERSION: ${{ needs.version.outputs.version }}
@@ -137,10 +135,10 @@ jobs:
   app:
     name: macOS app
     needs: version
-    # The hosted macOS runners are sometimes short of capacity and a job waits in the queue until GitHub cancels it. To
-    # try another image without a commit, set the repository variable MACOS_RUNNER (Settings > Secrets and variables >
-    # Actions > Variables), for example to macos-15, and re-run the job.
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    # macos-15 because the macos-26 runners were short of capacity (jobs waited in the queue until GitHub cancelled them).
+    # To try another image without a commit, set the repository variable MACOS_RUNNER (Settings > Secrets and variables >
+    # Actions > Variables), for example to macos-26, and re-run the job.
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-15' }}
     timeout-minutes: 45
     env:
       SOUNDBAR_VERSION: ${{ needs.version.outputs.version }}
@@ -222,7 +220,7 @@ jobs:
     # only a merge into main publishes; the checks of both jobs above must have passed
     if: github.event_name == 'push'
     needs: [version, extension, app]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
