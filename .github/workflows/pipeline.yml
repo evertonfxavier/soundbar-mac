@@ -20,7 +20,9 @@ permissions:
 
 concurrency:
   # A manual run does not share a queue with the pushes to main, so it can never take the place of a release that waits.
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # The "v2" is there on purpose: a few runs of the first day stayed "queued" for good (GitHub neither runs nor cancels
+  # them) and kept the old group busy, so new runs waited behind them. It can go once those runs are gone.
+  group: v2-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   # A newer push to a pull request replaces the older run. On main the run that is going is never cut short, and of the
   # runs that wait only the newest is kept: the merge that was left out goes out in the release of the next one.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
