@@ -9,6 +9,8 @@ struct AudioProcess {
     let isRunningOutput: Bool
     let isRunningInput: Bool
     let outputDeviceUID: String?
+    /// The input devices the process reads from (empty when it is not recording).
+    var inputDeviceUIDs: [String] = []
 }
 
 /// The user-facing app that owns one or more audio processes
@@ -32,8 +34,15 @@ enum ProcessScanner {
                     id, kAudioProcessPropertyDevices, scope: kAudioObjectPropertyScopeOutput, initial: 0)
                 outUID = devices.lazy.compactMap { CA.deviceUID($0) }.first
             }
+            var inUIDs: [String] = []
+            if inp {
+                let devices: [AudioObjectID] = CA.getArray(
+                    id, kAudioProcessPropertyDevices, scope: kAudioObjectPropertyScopeInput, initial: 0)
+                inUIDs = devices.compactMap { CA.deviceUID($0) }
+            }
             return AudioProcess(
-                objectID: id, pid: pid, isRunningOutput: out, isRunningInput: inp, outputDeviceUID: outUID)
+                objectID: id, pid: pid, isRunningOutput: out, isRunningInput: inp, outputDeviceUID: outUID,
+                inputDeviceUIDs: inUIDs)
         }
     }
 

@@ -22,6 +22,9 @@ final class Mixer: ObservableObject {
 
     private let bridge = BrowserBridge()
 
+    /// The sounds the user can play into a call; the menu shows it as its own section.
+    let soundboard = Soundboard()
+
     /// Names of everything currently using the microphone (apps and browser tabs).
     var micUserNames: [String] { MicUsage.userNames(apps: apps, tabs: browserTabs) }
 
@@ -206,6 +209,7 @@ final class Mixer: ObservableObject {
     func refresh() {
         let procs = ProcessScanner.scan().filter { $0.pid != myPID }
         ProcessScanner.forget(pidsNotIn: Set(procs.map(\.pid)))
+        soundboard.update(processes: procs)
 
         let groups = AppListing.group(procs, ownerOf: ProcessScanner.owner(for:))
 
@@ -296,5 +300,6 @@ final class Mixer: ObservableObject {
     func shutdown() {
         for tap in taps.values { tap.stop() }
         taps.removeAll()
+        soundboard.shutdown()
     }
 }
