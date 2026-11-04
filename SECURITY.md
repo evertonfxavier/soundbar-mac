@@ -14,12 +14,12 @@ SoundBar is not sandboxed, because Core Audio process taps and the process list 
 
 ## Supported versions
 
-Only the [latest release](../../releases/latest) gets fixes.
+Only the [latest release](https://github.com/evertonfxavier/soundbar-mac/releases/latest) gets fixes.
 
 ## Reporting a vulnerability
 
 Please **do not open a public issue** for a security problem. Use GitHub's private reporting instead: *Security* tab >
-*Report a vulnerability* ([direct link](../../security/advisories/new)).
+*Report a vulnerability* ([direct link](https://github.com/evertonfxavier/soundbar-mac/security/advisories/new)).
 
 Helpful in a report: the SoundBar version, the macOS and Chrome versions, what an attacker needs (a web page? another
 local process? a local user?), and steps to reproduce.
