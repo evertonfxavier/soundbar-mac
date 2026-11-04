@@ -135,7 +135,10 @@ jobs:
   app:
     name: macOS app
     needs: version
-    runs-on: macos-26
+    # The hosted macOS runners are sometimes short of capacity and a job waits in the queue until GitHub cancels it. To
+    # try another image without a commit, set the repository variable MACOS_RUNNER (Settings > Secrets and variables >
+    # Actions > Variables), for example to macos-15, and re-run the job.
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 45
     env:
       SOUNDBAR_VERSION: ${{ needs.version.outputs.version }}
