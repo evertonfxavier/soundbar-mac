@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SoundBar app icon (master, 1024x1024). macOS icon grid: the squircle is 824x824 at (100,100); the
+  rest is room for the drop shadow. Rendered to Resources/AppIcon.icns by scripts/make-icons.sh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#8E86FF"/>
+      <stop offset="0.55" stop-color="#6046F0"/>
+      <stop offset="1" stop-color="#3D27C9"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D7D4FF"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
+      <feOffset dy="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.10  0 0 0 0 0.05  0 0 0 0 0.45  0 0 0 0.45 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="knobShadow" x="-40%" y="-40%" width="180%" height="190%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="9"/>
+      <feOffset dy="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.06  0 0 0 0 0.50  0 0 0 0.5 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="body">
+      <rect x="100" y="100" width="824" height="824" rx="188"/>
+    </clipPath>
+  </defs>
+
+  <!-- body -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="100" width="824" height="824" rx="188" fill="url(#bg)"/>
+  </g>
+  <rect x="100" y="100" width="824" height="824" rx="188" fill="url(#sheen)"/>
+  <rect x="102" y="102" width="820" height="820" rx="186" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3"/>
+
+  <!-- three faders: track (dim), level (bright, below the knob), knob -->
+  <g>
+    <!-- 1: high -->
+    <rect x="305" y="272" width="64" height="480" rx="32" fill="#FFFFFF" fill-opacity="0.26"/>
+    <rect x="305" y="392" width="64" height="360" rx="32" fill="url(#fill)"/>
+    <circle cx="337" cy="392" r="62" fill="#FFFFFF" filter="url(#knobShadow)"/>
+    <circle cx="337" cy="392" r="22" fill="#6046F0"/>
+
+    <!-- 2: low -->
+    <rect x="480" y="272" width="64" height="480" rx="32" fill="#FFFFFF" fill-opacity="0.26"/>
+    <rect x="480" y="556" width="64" height="196" rx="32" fill="url(#fill)"/>
+    <circle cx="512" cy="556" r="62" fill="#FFFFFF" filter="url(#knobShadow)"/>
+    <circle cx="512" cy="556" r="22" fill="#6046F0"/>
+
+    <!-- 3: highest -->
+    <rect x="655" y="272" width="64" height="480" rx="32" fill="#FFFFFF" fill-opacity="0.26"/>
+    <rect x="655" y="338" width="64" height="414" rx="32" fill="url(#fill)"/>
+    <circle cx="687" cy="338" r="62" fill="#FFFFFF" filter="url(#knobShadow)"/>
+    <circle cx="687" cy="338" r="22" fill="#6046F0"/>
+  </g>
+</svg>

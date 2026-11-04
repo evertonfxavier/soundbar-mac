@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>SoundBar</string>
+    <key>CFBundleDisplayName</key>
+    <string>SoundBar</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.everton.soundbar</string>
+    <key>CFBundleExecutable</key>
+    <string>SoundBar</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <!-- The two versions below are rewritten by scripts/build-app.sh from the VERSION file (or SOUNDBAR_VERSION). -->
+    <key>CFBundleShortVersionString</key>
+    <string>0.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.2</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <!-- A menu bar app: no Dock icon, no main menu. -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- One copy only: a second would fight the first for the port of the Chrome extension and for the taps. -->
+    <key>LSMultipleInstancesProhibited</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>O SoundBar precisa interceptar o áudio de cada app para ajustar o volume individualmente.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>O SoundBar mostra quais apps estão usando o microfone e permite mutá-lo.</string>
+</dict>
+</plist>

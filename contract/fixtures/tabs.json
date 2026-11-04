@@ -1,0 +1,27 @@
+{
+  "type": "tabs",
+  "tabs": [
+    {
+      "id": 12,
+      "title": "Lo-fi beats to relax to",
+      "host": "www.youtube.com",
+      "favIconUrl": "https://www.youtube.com/favicon.ico",
+      "audible": true,
+      "muted": false,
+      "volume": 0.5,
+      "mic": false,
+      "micMuted": false
+    },
+    {
+      "id": 34,
+      "title": "",
+      "host": "meet.google.com",
+      "favIconUrl": null,
+      "audible": false,
+      "muted": true,
+      "volume": 1,
+      "mic": true,
+      "micMuted": true
+    }
+  ]
+}

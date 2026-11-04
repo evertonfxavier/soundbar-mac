@@ -1,0 +1,265 @@
+name: CI/CD Pipeline
+
+# A pull request is checked and built; a merge into main does the same and then publishes a GitHub release with
+#   - SoundBar-v<version>.dmg          the macOS app (signed and notarized if the repository has the secrets: see job "app")
+#   - SoundBar-Bridge-v<version>.zip   the Chrome extension, the contents of its dist/ folder
+#   - SHA256SUMS.txt
+# The checks run again on main because a release is made of what is on main, not of what a pull request once showed.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A manual run does not share a queue with the pushes to main, so it can never take the place of a release that waits.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # A newer push to a pull request replaces the older run. On main the run that is going is never cut short, and of the
+  # runs that wait only the newest is kept: the merge that was left out goes out in the release of the next one.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Test the release script
+        run: node --test scripts/release.test.mjs
+
+      # major.minor come from VERSION (changed by hand); on main the patch counts up from the releases already made.
+      # A pull request builds with the number in VERSION as it is.
+      - name: Work out the version of this build
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IS_RELEASE: ${{ github.event_name == 'push' }}
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          if [ "$IS_RELEASE" = "true" ]; then
+            BASE=$(node scripts/release.mjs base "$VERSION")
+            TAGS=$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/v${BASE}." --paginate --jq '.[].ref | sub("refs/tags/"; "")')
+            VERSION=$(printf '%s\n' "$TAGS" | node scripts/release.mjs next-version "$BASE")
+          fi
+          echo "Building ${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+  extension:
+    name: Chrome extension
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOUNDBAR_VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # the version of pnpm is the "packageManager" of ChromeExtension/package.json
+      # (pinned to a commit, not to a tag that can move: this is not an action of GitHub, and it runs in the job that
+      # builds the extension that is published; Dependabot keeps it up to date)
+      - name: Install pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: ChromeExtension/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ChromeExtension/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ChromeExtension
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: ChromeExtension
+        run: pnpm lint
+
+      - name: Typecheck
+        working-directory: ChromeExtension
+        run: pnpm typecheck
+
+      - name: Check the formatting
+        working-directory: ChromeExtension
+        run: pnpm format:check
+
+      # also holds the line on the coverage of the rules and the adapters (see vitest.config.ts)
+      - name: Test
+        working-directory: ChromeExtension
+        run: pnpm test:coverage
+
+      # builds dist/ and zips it into build/SoundBar-Bridge-v<version>.zip
+      - name: Build and zip the extension
+        working-directory: ChromeExtension
+        run: pnpm package
+
+      # the extension of this run, ready to be loaded in Chrome (unzip the artifact, then Load unpacked)
+      - name: Upload the extension
+        uses: actions/upload-artifact@v7
+        with:
+          name: SoundBar-Bridge
+          path: build/SoundBar-Bridge-v*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  app:
+    name: macOS app
+    needs: version
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      SOUNDBAR_VERSION: ${{ needs.version.outputs.version }}
+      SOUNDBAR_BUILD: ${{ github.run_number }}
+      # Signing and notarization need the secrets of the repository (Settings > Secrets and variables > Actions), and
+      # happen only on a push to main: a pull request, even one from this repository, runs code nobody has reviewed
+      # yet, so it never gets them. The secrets themselves go only to the steps that use them, not to the whole job.
+      # Without them the app is signed ad hoc: it runs, but macOS asks the user to allow it (see the README).
+      SIGN: ${{ github.event_name == 'push' && secrets.MACOS_CERTIFICATE != '' }}
+      NOTARIZE: ${{ github.event_name == 'push' && secrets.MACOS_CERTIFICATE != '' && secrets.NOTARY_APPLE_ID != '' }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check the formatting
+        run: swift format lint --strict --configuration .swift-format --recursive Sources Tests
+
+      - name: Test
+        env:
+          SWIFTFLAGS: -warnings-as-errors
+        run: scripts/test.sh
+
+      - name: Import the signing certificate
+        if: ${{ env.SIGN == 'true' }}
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          # Not inside the echo: `set -e` ignores a command substitution that fails in an argument, and a release
+          # that quietly falls back to an ad hoc signature is worse than one that stops here.
+          identity="$(scripts/ci-import-certificate.sh)"
+          echo "SIGN_IDENTITY=${identity}" >> "$GITHUB_ENV"
+
+      # one app for both kinds of Mac
+      - name: Build the app
+        env:
+          ARCHS: arm64 x86_64
+          SWIFTFLAGS: -warnings-as-errors
+        run: scripts/build-app.sh
+
+      - name: Notarize the app
+        if: ${{ env.NOTARIZE == 'true' }}
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: scripts/notarize.sh build/SoundBar.app
+
+      - name: Make the disk image
+        run: scripts/make-dmg.sh
+
+      - name: Notarize the disk image
+        if: ${{ env.NOTARIZE == 'true' }}
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: scripts/notarize.sh "build/SoundBar-v${SOUNDBAR_VERSION}.dmg"
+
+      # informational: an app signed ad hoc is rejected here, by design
+      - name: Ask Gatekeeper
+        continue-on-error: true
+        run: spctl --assess --type execute --verbose=2 build/SoundBar.app
+
+      # the image of this run: mount it, drag the app to Applications
+      - name: Upload the disk image
+        uses: actions/upload-artifact@v7
+        with:
+          name: SoundBar-macOS
+          path: build/SoundBar-v*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Release
+    # only a merge into main publishes; the checks of both jobs above must have passed
+    if: github.event_name == 'push'
+    needs: [version, extension, app]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Download what was built
+        uses: actions/download-artifact@v8
+        with:
+          path: release
+          merge-multiple: true
+
+      # `>` and not `| tee`: the shell lists the files before the redirection creates the checksums file, so the list
+      # never includes it
+      - name: Write the checksums
+        working-directory: release
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Write the release notes
+        run: |
+          cat > notes.md <<EOF
+          ## Install
+
+          **SoundBar (macOS 14.2 or later):** open \`SoundBar-v${VERSION}.dmg\` and drag SoundBar to Applications.
+          If macOS says it cannot verify the app (a build that was not notarized), run
+          \`xattr -dr com.apple.quarantine /Applications/SoundBar.app\` once, or use System Settings > Privacy & Security > Open Anyway.
+
+          **Chrome extension (for volume and microphone per tab):** unzip \`SoundBar-Bridge-v${VERSION}.zip\`, open
+          \`chrome://extensions\`, turn on Developer mode, choose Load unpacked and pick the unzipped folder.
+
+          EOF
+
+      - name: Publish the release
+        run: |
+          gh release create "v${VERSION}" release/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "SoundBar v${VERSION}" \
+            --notes-file notes.md \
+            --generate-notes \
+            --latest

@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # the versions of the actions in .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  # the dependencies of the Chrome extension (development only: nothing is shipped but the bundles)
+  - package-ecosystem: npm
+    directory: /ChromeExtension
+    schedule:
+      interval: weekly
+    groups:
+      development:
+        dependency-type: development
+    ignore:
+      # typescript-eslint does not support TypeScript 7 yet: move both together
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']

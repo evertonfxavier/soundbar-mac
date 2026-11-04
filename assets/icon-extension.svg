@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SoundBar Bridge (Chrome extension) icon, 128x128 master. Same three faders as the app, in teal so the
+  two are told apart in the toolbar. Bolder strokes: it has to read at 16x16. The artwork is 96x96 inside a
+  16px margin, the Chrome Web Store layout. Rendered to ChromeExtension/public/icons by scripts/make-icons.sh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#2BD9C5"/>
+      <stop offset="0.5" stop-color="#0D9BD8"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.30"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#bg)"/>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#sheen)"/>
+
+  <!-- three faders: track (dim), level (bright), knob -->
+  <g>
+    <rect x="28" y="28" width="16" height="72" rx="8" fill="#FFFFFF" fill-opacity="0.30"/>
+    <rect x="28" y="48" width="16" height="52" rx="8" fill="#FFFFFF"/>
+    <circle cx="36" cy="48" r="13" fill="#FFFFFF"/>
+    <circle cx="36" cy="48" r="5" fill="#0D9BD8"/>
+
+    <rect x="56" y="28" width="16" height="72" rx="8" fill="#FFFFFF" fill-opacity="0.30"/>
+    <rect x="56" y="74" width="16" height="26" rx="8" fill="#FFFFFF"/>
+    <circle cx="64" cy="74" r="13" fill="#FFFFFF"/>
+    <circle cx="64" cy="74" r="5" fill="#0D9BD8"/>
+
+    <rect x="84" y="28" width="16" height="72" rx="8" fill="#FFFFFF" fill-opacity="0.30"/>
+    <rect x="84" y="38" width="16" height="62" rx="8" fill="#FFFFFF"/>
+    <circle cx="92" cy="38" r="13" fill="#FFFFFF"/>
+    <circle cx="92" cy="38" r="5" fill="#0D9BD8"/>
+  </g>
+</svg>

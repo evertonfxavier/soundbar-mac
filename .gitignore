@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# what the build makes (the app, the disk image, the extension zip)
+/build/
+
+# leftovers of the Swift Package Manager (this project does not use it: see README, "Why swiftc")
+/.build/
+/.swiftpm/
+
+# the Chrome extension
+ChromeExtension/node_modules/
+ChromeExtension/dist/
+ChromeExtension/coverage/
+ChromeExtension/.vitest/
+
+# editors
+.idea/
+.vscode/
+*.xcodeproj/xcuserdata/
