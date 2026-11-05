@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuView: View {
     @EnvironmentObject var mixer: Mixer
     @EnvironmentObject var updater: Updater
+    @EnvironmentObject var localizer: Localizer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -16,7 +17,7 @@ struct MenuView: View {
             }
 
             DeviceRow(
-                title: "Saída",
+                title: L.output.string,
                 device: mixer.output,
                 choices: mixer.outputDevices,
                 select: { mixer.selectDevice(uid: $0, input: false) },
@@ -27,7 +28,7 @@ struct MenuView: View {
             )
 
             DeviceRow(
-                title: "Microfone",
+                title: L.microphone.string,
                 device: mixer.input,
                 choices: mixer.inputDevices,
                 select: { mixer.selectDevice(uid: $0, input: true) },
@@ -41,7 +42,7 @@ struct MenuView: View {
                 HStack(spacing: 6) {
                     Circle().fill(mixer.input.muted ? Color.secondary : Color.red).frame(width: 7, height: 7)
                     Text(
-                        (mixer.input.muted ? "Mutado para: " : "Em uso por: ")
+                        (mixer.input.muted ? L.micMutedFor.string : L.micInUseBy.string)
                             + mixer.micUserNames.joined(separator: ", ")
                     )
                     .font(.caption)
@@ -54,7 +55,7 @@ struct MenuView: View {
             if !mixer.browserTabs.isEmpty {
                 Divider()
 
-                SectionTitle("ABAS DO CHROME")
+                SectionTitle(L.sectionChromeTabs.string)
 
                 if mixer.browserTabs.count > 4 {
                     ScrollView { tabList }.frame(height: 260)
@@ -65,10 +66,10 @@ struct MenuView: View {
 
             Divider()
 
-            SectionTitle("APPS")
+            SectionTitle(L.sectionApps.string)
 
             if mixer.apps.isEmpty {
-                Text("Nenhum app usando áudio agora.")
+                Text(L.noAppsPlaying.string)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -81,7 +82,7 @@ struct MenuView: View {
 
             if mixer.showExtensionHint {
                 Label(
-                    "Para controlar cada aba do Chrome, instale a extensão SoundBar Bridge (veja o README).",
+                    L.extensionHint.string,
                     systemImage: "puzzlepiece.extension"
                 )
                 .font(.caption)
@@ -95,14 +96,16 @@ struct MenuView: View {
 
             Divider()
 
-            Toggle("Verificar atualizações", isOn: $updater.checksForUpdates)
+            Toggle(L.checkForUpdates.string, isOn: $updater.checksForUpdates)
                 .toggleStyle(.checkbox)
                 .font(.caption)
-                .help("Consulta o GitHub de tempos em tempos para saber se há uma versão nova")
+                .help(L.checkForUpdatesHelp.string)
+
+            LanguageRow()
 
             HStack {
                 Toggle(
-                    "Abrir ao iniciar sessão",
+                    L.launchAtLogin.string,
                     isOn: Binding(
                         get: { mixer.launchAtLogin },
                         set: { mixer.setLaunchAtLogin($0) }
@@ -114,7 +117,7 @@ struct MenuView: View {
                 Text("v\(AppInfo.version)")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                Button("Sair") { NSApp.terminate(nil) }
+                Button(L.quit.string) { NSApp.terminate(nil) }
                     .controlSize(.small)
             }
         }
@@ -149,5 +152,37 @@ struct SectionTitle: View {
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.secondary)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The language of the app: the three it speaks, and "automatic", which follows the system.
+private struct LanguageRow: View {
+    @EnvironmentObject var localizer: Localizer
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "globe").foregroundStyle(.secondary)
+            Text(L.languageLabel.string).font(.caption)
+            Menu {
+                ForEach(AppLanguage.allCases, id: \.self) { option in
+                    Button {
+                        localizer.choice = option
+                    } label: {
+                        if option == localizer.choice {
+                            Label(localizer.name(of: option), systemImage: "checkmark")
+                        } else {
+                            Text(localizer.name(of: option))
+                        }
+                    }
+                }
+            } label: {
+                Text(localizer.name(of: localizer.choice)).font(.caption)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.visible)
+            .fixedSize()
+            Spacer()
+        }
+        .accessibilityElement(children: .contain)
     }
 }

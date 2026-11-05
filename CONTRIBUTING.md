@@ -46,7 +46,11 @@ A pull request should pass `make check`. The pipeline runs the same on every pul
   real device are the one thing tests cannot cover, so say in the pull request how you tried it by hand.
 - **No new dependency** without a reason in the pull request. The app has none, and the extension has few.
 - **Keep the pull request small and about one thing.** Commit messages in the imperative ("Fix the mic mute on clones").
-- The interface is in Portuguese; code, comments and docs are in English.
+- **Texts the user reads go in `Sources/SoundBar/Core/Localization/L.swift`**, in Portuguese, English and Spanish side by
+  side (it does not compile with a language missing; a test checks the arguments agree, and another looks for a text
+  left in the code). Use `L.something.string` (or `.formatted(...)` for a text with `%@`) in the views and the errors.
+  To add a language: a case in `ResolvedLanguage` and `AppLanguage`, a language in every `L` text, and a
+  `Resources/<language>.lproj/InfoPlist.strings`. Code, comments and docs are in English.
 
 ## Releases
 

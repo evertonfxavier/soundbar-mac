@@ -15,7 +15,7 @@ struct MuteButton: View {
                 .foregroundStyle(muted ? Color.red : Color.primary)
         }
         .buttonStyle(.borderless)
-        .help(muted ? "Desmutar" : "Mutar")
-        .accessibilityLabel("\(muted ? "Desmutar" : "Mutar") \(subject)")
+        .help(muted ? L.unmute.string : L.mute.string)
+        .accessibilityLabel(muted ? L.unmuteThing.formatted(subject) : L.muteThing.formatted(subject))
     }
 }

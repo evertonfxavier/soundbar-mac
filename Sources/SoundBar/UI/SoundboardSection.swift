@@ -10,7 +10,7 @@ struct SoundboardSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                SectionTitle("SONOPLASTIA")
+                SectionTitle(L.sectionSoundboard.string)
                 Spacer()
                 Button {
                     soundboard.stopAll()
@@ -18,20 +18,20 @@ struct SoundboardSection: View {
                     Image(systemName: "stop.fill")
                 }
                 .buttonStyle(.borderless)
-                .help("Parar todos os sons")
-                .accessibilityLabel("Parar todos os sons")
+                .help(L.stopAllSounds.string)
+                .accessibilityLabel(L.stopAllSounds.string)
                 Button {
                     SoundEditorWindow.show(editing: nil, soundboard: soundboard)
                 } label: {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.borderless)
-                .help("Adicionar um som")
-                .accessibilityLabel("Adicionar um som")
+                .help(L.addSound.string)
+                .accessibilityLabel(L.addSound.string)
             }
 
             if soundboard.sounds.isEmpty {
-                Text("Nenhum som ainda. Toque em + para adicionar o primeiro.")
+                Text(L.noSoundsYet.string)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -91,8 +91,8 @@ private struct SoundButton: View {
         .help(sound.name)
         .accessibilityLabel(sound.name)
         .contextMenu {
-            Button("Editar…") { SoundEditorWindow.show(editing: sound, soundboard: soundboard) }
-            Button("Remover", role: .destructive) { soundboard.remove(sound) }
+            Button(L.edit.string) { SoundEditorWindow.show(editing: sound, soundboard: soundboard) }
+            Button(L.remove.string, role: .destructive) { soundboard.remove(sound) }
         }
     }
 }
@@ -127,25 +127,25 @@ private struct SoundboardStatus: View {
         case .noDriver:
             VStack(alignment: .leading, spacing: 4) {
                 Label(
-                    "Para os outros ouvirem os sons na chamada, instale o BlackHole (um microfone virtual gratuito).",
+                    L.statusNoDriver.string,
                     systemImage: "info.circle"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 HStack {
-                    Button("Copiar comando") {
+                    Button(L.copyCommand.string) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString("brew install blackhole-2ch", forType: .string)
                     }
-                    Link("Site", destination: URL(string: "https://existential.audio/blackhole/")!)
+                    Link(L.website.string, destination: URL(string: "https://existential.audio/blackhole/")!)
                 }
                 .controlSize(.small)
                 .font(.caption)
             }
         case .idle:
             Label(
-                "Na chamada, escolha “BlackHole 2ch” como microfone para os outros ouvirem os sons.",
+                L.statusIdle.string,
                 systemImage: "info.circle"
             )
             .font(.caption)
@@ -154,7 +154,7 @@ private struct SoundboardStatus: View {
         case .live:
             HStack(spacing: 6) {
                 Circle().fill(Color.green).frame(width: 7, height: 7)
-                Text("Os sons vão para a chamada.")
+                Text(L.statusLive.string)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -173,20 +173,20 @@ private struct MicrophonePicker: View {
     @EnvironmentObject var soundboard: Soundboard
 
     private var currentName: String {
-        soundboard.microphones.first { $0.uid == soundboard.chosenMicrophoneUID }?.name ?? "Automático"
+        soundboard.microphones.first { $0.uid == soundboard.chosenMicrophoneUID }?.name ?? L.languageAutomatic.string
     }
 
     var body: some View {
         HStack(spacing: 4) {
-            Text("Microfone dos sons:").font(.caption).foregroundStyle(.secondary)
+            Text(L.soundsMicrophone.string).font(.caption).foregroundStyle(.secondary)
             Menu {
                 Button {
                     soundboard.chooseMicrophone(nil)
                 } label: {
                     if soundboard.chosenMicrophoneUID == nil {
-                        Label("Automático (o do sistema)", systemImage: "checkmark")
+                        Label(L.automaticSystem.string, systemImage: "checkmark")
                     } else {
-                        Text("Automático (o do sistema)")
+                        Text(L.automaticSystem.string)
                     }
                 }
                 Divider()

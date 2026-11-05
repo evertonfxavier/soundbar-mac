@@ -31,7 +31,7 @@ struct DeviceRow: View {
                 Slider(value: Binding(get: { device.volume }, set: setVolume), in: 0...1)
                     .controlSize(.small)
                     .disabled(!device.hasVolume)
-                    .accessibilityLabel("Volume de \(title)")
+                    .accessibilityLabel(L.volumeOf.formatted(title))
             }
         }
     }
@@ -64,7 +64,7 @@ private struct DevicePicker: View {
         .menuIndicator(.visible)
         .fixedSize()
         .disabled(choices.count < 2)
-        .help("Trocar \(title.lowercased())")
-        .accessibilityLabel("Dispositivo de \(title): \(current.name)")
+        .help(L.switchDevice.formatted(title.lowercased()))
+        .accessibilityLabel(L.deviceOf.formatted(title, current.name))
     }
 }

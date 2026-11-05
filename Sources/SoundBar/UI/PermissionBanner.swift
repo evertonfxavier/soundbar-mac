@@ -7,13 +7,13 @@ struct PermissionBanner: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Permissão necessária")
+                Text(L.permissionNeeded.string)
                     .font(.callout.weight(.semibold))
-                Text("Para ajustar o volume de cada app, permita “Gravação de Áudio do Sistema”.")
+                Text(L.permissionBody.string)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(mixer.permission == .denied ? "Abrir Ajustes" : "Permitir") {
+                Button(mixer.permission == .denied ? L.openSettings.string : L.allow.string) {
                     mixer.requestPermission()
                 }
                 .controlSize(.small)

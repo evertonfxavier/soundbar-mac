@@ -11,12 +11,12 @@ import Foundation
 final class MicFeed {
     enum FeedError: LocalizedError {
         case deviceMissing
-        case coreAudio(String, OSStatus)
+        case coreAudio(L, OSStatus)
 
         var errorDescription: String? {
             switch self {
-            case .deviceMissing: "O microfone ou o BlackHole não está disponível."
-            case .coreAudio(let what, let status): "\(what) falhou (erro \(status))."
+            case .deviceMissing: L.errDeviceMissing.string
+            case .coreAudio(let what, let status): L.errStepFailed.formatted(what.string, String(status))
             }
         }
     }
@@ -62,7 +62,7 @@ final class MicFeed {
             ],
         ]
         var status = AudioHardwareCreateAggregateDevice(description as CFDictionary, &aggregateID)
-        guard status == noErr else { throw FeedError.coreAudio("Criar o dispositivo agregado", status) }
+        guard status == noErr else { throw FeedError.coreAudio(.stepCreateAggregate, status) }
 
         sampleRate = CA.get(aggregateID, kAudioDevicePropertyNominalSampleRate, initial: Float64(0)) ?? 0
         if sampleRate <= 0 { sampleRate = 48_000 }
@@ -79,10 +79,10 @@ final class MicFeed {
                 output: UnsafeMutableAudioBufferListPointer(output),
                 outputStart: micOutputStreams, mixer: mixer)
         }
-        guard status == noErr else { throw FeedError.coreAudio("Criar o IOProc", status) }
+        guard status == noErr else { throw FeedError.coreAudio(.stepCreateIOProc, status) }
 
         status = AudioDeviceStart(aggregateID, procID)
-        guard status == noErr else { throw FeedError.coreAudio("Iniciar o áudio", status) }
+        guard status == noErr else { throw FeedError.coreAudio(.stepStartAudio, status) }
     }
 
     func stop() {

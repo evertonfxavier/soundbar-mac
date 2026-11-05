@@ -63,9 +63,11 @@ struct AudioDecoderTests {
         #expect(throws: AudioDecoder.DecodeError.unreadable) { try AudioDecoder.duration(of: url) }
     }
 
-    @Test("the errors are readable, in Portuguese")
+    @Test("the errors are readable, in the language of the app, and say the numbers")
     func messages() {
-        #expect(AudioDecoder.DecodeError.unreadable.errorDescription?.contains("áudio") == true)
-        #expect(AudioDecoder.DecodeError.tooLong(seconds: 45).errorDescription?.contains("45") == true)
+        #expect(AudioDecoder.DecodeError.unreadable.errorDescription == L.errAudioUnreadable.string)
+        let tooLong = AudioDecoder.DecodeError.tooLong(seconds: 45).errorDescription
+        #expect(tooLong?.contains("45") == true)
+        #expect(tooLong?.contains("\(Int(AudioDecoder.maxDuration))") == true)
     }
 }
