@@ -7,7 +7,7 @@
 
 A volume mixer for the macOS menu bar.
 
-<p align="center"><img src="assets/screenshot.png" width="380" alt="The SoundBar menu: output and microphone sliders, and one slider for Google Chrome"></p>
+<p align="center"><img src="assets/screenshot.png" width="343" alt="The SoundBar menu: update banner, output and microphone sliders, and the foldable Chrome tabs, Apps and Soundboard sections"></p>
 
 - **Switch the speaker and the microphone** from the menu: the name of each device is a menu of the ones you have.
 - **One slider per app** (and a mute button): turn Spotify down without touching the system volume. Up to 150%.
