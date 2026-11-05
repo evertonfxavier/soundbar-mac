@@ -10,6 +10,8 @@ Sources/SoundBar/
     Browser/      the local WebSocket the extension talks to (BrowserBridge) and its messages (BridgeProtocol)
     Soundboard/   the user's sounds: Sound, SoundLibrary (files + index), VoiceMixer (the realtime sum), AudioDecoder,
                   SoundboardRouting (which device is which, when to feed), Soundboard (the state the menu shows)
+    Update/       the check for a newer release: AppVersion, UpdateChecker (GitHub's API, links limited to this
+                  repository), Updater (when to ask, what the menu shows)
     Mixer.swift   the state of the menu: watches apps and devices, keeps the settings, runs one tap per app
 Tests/            Swift Testing: rules, the realtime gain kernel, the bridge against a real WebSocket client
 ChromeExtension/  the extension, in TypeScript (below)
