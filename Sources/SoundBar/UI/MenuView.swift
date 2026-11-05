@@ -55,39 +55,39 @@ struct MenuView: View {
             if !mixer.browserTabs.isEmpty {
                 Divider()
 
-                SectionTitle(L.sectionChromeTabs.string)
-
-                if mixer.browserTabs.count > 4 {
-                    ScrollView { tabList }.frame(height: 260)
-                } else {
-                    tabList
+                CollapsibleSection(.chromeTabs, title: L.sectionChromeTabs.string, count: mixer.browserTabs.count) {
+                    if mixer.browserTabs.count > 4 {
+                        ScrollView { tabList }.frame(height: 260)
+                    } else {
+                        tabList
+                    }
                 }
             }
 
             Divider()
 
-            SectionTitle(L.sectionApps.string)
+            CollapsibleSection(.apps, title: L.sectionApps.string, count: mixer.apps.count) {
+                if mixer.apps.isEmpty {
+                    Text(L.noAppsPlaying.string)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                } else if mixer.apps.count > 6 {
+                    ScrollView { appList }.frame(height: 340)
+                } else {
+                    appList
+                }
 
-            if mixer.apps.isEmpty {
-                Text(L.noAppsPlaying.string)
-                    .font(.callout)
+                if mixer.showExtensionHint {
+                    Label(
+                        L.extensionHint.string,
+                        systemImage: "puzzlepiece.extension"
+                    )
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-            } else if mixer.apps.count > 6 {
-                ScrollView { appList }.frame(height: 340)
-            } else {
-                appList
-            }
-
-            if mixer.showExtensionHint {
-                Label(
-                    L.extensionHint.string,
-                    systemImage: "puzzlepiece.extension"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Divider()
@@ -139,19 +139,6 @@ struct MenuView: View {
                 AppRow(app: app)
             }
         }
-    }
-}
-
-struct SectionTitle: View {
-    let text: String
-
-    init(_ text: String) { self.text = text }
-
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .accessibilityAddTraits(.isHeader)
     }
 }
 
