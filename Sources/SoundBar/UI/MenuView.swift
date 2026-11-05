@@ -3,9 +3,14 @@ import SwiftUI
 
 struct MenuView: View {
     @EnvironmentObject var mixer: Mixer
+    @EnvironmentObject var updater: Updater
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if let update = updater.available {
+                UpdateBanner(info: update)
+            }
+
             if mixer.permission != .authorized {
                 PermissionBanner()
             }
@@ -90,6 +95,11 @@ struct MenuView: View {
 
             Divider()
 
+            Toggle("Verificar atualizações", isOn: $updater.checksForUpdates)
+                .toggleStyle(.checkbox)
+                .font(.caption)
+                .help("Consulta o GitHub de tempos em tempos para saber se há uma versão nova")
+
             HStack {
                 Toggle(
                     "Abrir ao iniciar sessão",
@@ -126,13 +136,6 @@ struct MenuView: View {
                 AppRow(app: app)
             }
         }
-    }
-}
-
-/// What the running build says about itself (set by scripts/build-app.sh in Info.plist).
-enum AppInfo {
-    static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 }
 

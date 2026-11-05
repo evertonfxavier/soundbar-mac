@@ -12,6 +12,7 @@ struct SoundBarApp: App {
             MenuView()
                 .environmentObject(mixer)
                 .environmentObject(mixer.soundboard)
+                .environmentObject(mixer.updater)
         } label: {
             Image(systemName: mixer.menuBarSymbol)
                 .accessibilityLabel("SoundBar")

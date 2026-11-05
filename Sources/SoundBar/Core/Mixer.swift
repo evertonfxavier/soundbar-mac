@@ -29,6 +29,9 @@ final class Mixer: ObservableObject {
     /// The sounds the user can play into a call; the menu shows it as its own section.
     let soundboard = Soundboard()
 
+    /// Tells the user when a newer release is out.
+    let updater = Updater()
+
     /// Names of everything currently using the microphone (apps and browser tabs).
     var micUserNames: [String] { MicUsage.userNames(apps: apps, tabs: browserTabs) }
 
@@ -59,6 +62,7 @@ final class Mixer: ObservableObject {
             if connected != self.browserConnected { self.browserConnected = connected }
         }
         bridge.start()
+        updater.start()
         listenForDeviceChanges()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
