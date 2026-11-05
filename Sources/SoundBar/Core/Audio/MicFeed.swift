@@ -131,5 +131,9 @@ final class MicFeed {
         }
 
         mixer.render(into: out, frames: outFrames, channels: outChannels)
+
+        if mixer.isCallMutedForRender() {
+            memset(outData, 0, Int(output[outputStart].mDataByteSize))
+        }
     }
 }

@@ -10,7 +10,7 @@ Sources/SoundBar/
     Browser/      the local WebSocket the extension talks to (BrowserBridge) and its messages (BridgeProtocol)
     Soundboard/   the user's sounds: Sound, SoundLibrary (files + index), VoiceMixer (the realtime sum), AudioDecoder,
                   SoundboardRouting (which device is which, when to feed), Soundboard (the state the menu shows)
-    Localization/ the languages: L (every text, in pt/en/es side by side), AppLanguage (the choice and the system's
+    Shortcuts/    global shortcuts: KeyCombo, ShortcutBindings (who has which key), HotKeyCenter (the system's\n                  registration, Carbon) and ShortcutManager (assigning, remembering, firing)\n    Localization/ the languages: L (every text, in pt/en/es side by side), AppLanguage (the choice and the system's
                   language), Language (the one in use) and Localizer (the menu's choice, kept between runs)
     Update/       the check for a newer release: AppVersion, UpdateChecker (GitHub's API, links limited to this
                   repository), Updater (when to ask, what the menu shows)
@@ -64,3 +64,12 @@ drift compensated. The feed runs only while another process reads BlackHole as i
 input devices of each audio process), and stops three refreshes after, so the real microphone is not opened when there is
 no call. Sounds are decoded once for the rate of the aggregate and kept; the same file also plays on the speakers with
 `AVAudioPlayer`.
+
+**Sounds in detail.** A sound is a file in the library plus its settings (`Sound`): volume, group, the section kept
+(`trimStart`/`trimEnd`) and whether it is normalized. Decoding applies the section and the normalizing once
+(`AudioDecoder`, `AudioAnalysis`: a target RMS, never past a peak ceiling), and the result is kept per sound and rate;
+the same decoded clip is what the call gets and what the speakers play (as a WAV in memory), so what is heard in the
+editor is what is sent. The call can be muted without stopping anything: the feed zeroes its output after mixing
+(`VoiceMixer.isCallMutedForRender`, read with a try-lock so the audio thread never waits), so the sounds go on
+advancing and nothing resumes from the middle of a sound. Export is a `ditto` zip of the library folder; import reads
+it back with the names inside only ever treated as plain file names.
