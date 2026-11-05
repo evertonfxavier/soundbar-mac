@@ -12,14 +12,15 @@ final class Updater: ObservableObject {
             guard checksForUpdates != oldValue else { return }
             defaults.set(checksForUpdates, forKey: Keys.enabled)
             if checksForUpdates {
-                checkIfDue()
+                checkNow()
             } else {
                 available = nil
             }
         }
     }
 
-    /// How long a result is good for, in seconds: the app is left open for days, and the check is cheap but not free.
+    /// How long a result is good for, in seconds, while the app stays open: it can be left open for days, and the
+    /// check is cheap but not free. A launch always asks (the answer is not kept between runs).
     nonisolated static let interval: TimeInterval = 6 * 3600
 
     private enum Keys {
@@ -49,10 +50,11 @@ final class Updater: ObservableObject {
         return now.timeIntervalSince(last) >= interval || last > now
     }
 
-    /// Starts the checks: one a few seconds after launch (not while the app is still starting), then one an hour.
-    func start() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-            MainActor.assumeIsolated { self?.checkIfDue() }
+    /// Starts the checks: one a few seconds after launch (not while the app is still starting), whatever the time of
+    /// the last one, then one every few hours while the app stays open.
+    func start(launchDelay: TimeInterval = 5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + launchDelay) { [weak self] in
+            MainActor.assumeIsolated { self?.checkNow() }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIfDue() }
@@ -60,9 +62,13 @@ final class Updater: ObservableObject {
     }
 
     func checkIfDue() {
-        guard checksForUpdates, !checking,
-            Self.isDue(last: defaults.object(forKey: Keys.lastCheck) as? Date, now: Date())
-        else { return }
+        guard Self.isDue(last: defaults.object(forKey: Keys.lastCheck) as? Date, now: Date()) else { return }
+        checkNow()
+    }
+
+    /// Asks in the background unless it is off or already asking, whatever the clock says.
+    func checkNow() {
+        guard checksForUpdates, !checking else { return }
         checking = true
         Task {
             await check()
