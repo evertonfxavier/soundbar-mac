@@ -19,4 +19,5 @@ struct DeviceState: Equatable {
     var volume: Float = 1
     var muted = false
     var hasVolume = false
+    var uid: String?
 }

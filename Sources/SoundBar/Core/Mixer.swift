@@ -17,6 +17,10 @@ final class Mixer: ObservableObject {
     @Published private(set) var permission: AudioCapturePermission.Status = .unknown
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
 
+    /// What the menus offer when the user switches the speaker or the microphone.
+    @Published private(set) var outputDevices: [SoundboardRouting.Device] = []
+    @Published private(set) var inputDevices: [SoundboardRouting.Device] = []
+
     @Published private(set) var browserTabs: [BrowserTab] = []
     @Published private(set) var browserConnected = false
 
@@ -195,6 +199,14 @@ final class Mixer: ObservableObject {
         refreshDevices()
     }
 
+    /// Makes `uid` the speaker (or the microphone) of the whole system, like the Sound settings do.
+    func selectDevice(uid: String, input isInput: Bool) {
+        if !AudioDevices.setDefault(uid: uid, input: isInput) {
+            NSLog("SoundBar: could not switch the default \(isInput ? "input" : "output") to \(uid)")
+        }
+        refreshDevices()
+    }
+
     func setLaunchAtLogin(_ on: Bool) {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
@@ -209,7 +221,8 @@ final class Mixer: ObservableObject {
     func refresh() {
         let procs = ProcessScanner.scan().filter { $0.pid != myPID }
         ProcessScanner.forget(pidsNotIn: Set(procs.map(\.pid)))
-        soundboard.update(processes: procs)
+        let devices = AudioDevices.all()
+        soundboard.update(processes: procs, devices: devices)
 
         let groups = AppListing.group(procs, ownerOf: ProcessScanner.owner(for:))
 
@@ -230,7 +243,7 @@ final class Mixer: ObservableObject {
             hideBrowsers: browserConnected && !browserTabs.isEmpty, now: now)
         if visible != apps { apps = visible }
 
-        refreshDevices()
+        refreshDevices(devices)
     }
 
     private func syncTap(_ app: AudioApp, allowTeardown: Bool) {
@@ -270,9 +283,14 @@ final class Mixer: ObservableObject {
         }
     }
 
-    private func refreshDevices() {
+    private func refreshDevices(_ devices: [SoundboardRouting.Device]? = nil) {
         output = deviceState(input: false)
         input = deviceState(input: true)
+        let all = devices ?? AudioDevices.all()
+        let outputs = DeviceMenu.outputs(from: all)
+        let inputs = DeviceMenu.inputs(from: all)
+        if outputs != outputDevices { outputDevices = outputs }
+        if inputs != inputDevices { inputDevices = inputs }
     }
 
     private func deviceState(input isInput: Bool) -> DeviceState {
@@ -282,12 +300,14 @@ final class Mixer: ObservableObject {
         let vol = DeviceControl.volume(dev, input: isInput) ?? 1
         var muted = DeviceControl.isMuted(dev, input: isInput)
         if isInput, !DeviceControl.hasMute(dev, input: true), hasVol, vol <= 0.001 { muted = true }
-        return DeviceState(id: dev, name: CA.deviceName(dev), volume: vol, muted: muted, hasVolume: hasVol)
+        return DeviceState(
+            id: dev, name: CA.deviceName(dev), volume: vol, muted: muted, hasVolume: hasVol, uid: CA.deviceUID(dev))
     }
 
     private func listenForDeviceChanges() {
         for sel in [
             kAudioHardwarePropertyDefaultOutputDevice, kAudioHardwarePropertyDefaultInputDevice,
+            kAudioHardwarePropertyDevices,
             kAudioHardwarePropertyProcessObjectList,
         ] {
             var addr = CA.address(sel)

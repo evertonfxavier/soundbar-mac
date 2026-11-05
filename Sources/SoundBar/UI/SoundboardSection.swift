@@ -44,6 +44,10 @@ struct SoundboardSection: View {
 
             SoundboardStatus(state: soundboard.state)
 
+            if soundboard.state != .noDriver, soundboard.microphones.count > 1 {
+                MicrophonePicker()
+            }
+
             if let message = soundboard.errorMessage {
                 Text(message)
                     .font(.caption)
@@ -161,5 +165,49 @@ private struct SoundboardStatus: View {
                 .foregroundStyle(.red)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+/// Which real microphone the sounds are mixed with: the system's default, or one the user picks (a headset, say).
+private struct MicrophonePicker: View {
+    @EnvironmentObject var soundboard: Soundboard
+
+    private var currentName: String {
+        soundboard.microphones.first { $0.uid == soundboard.chosenMicrophoneUID }?.name ?? "Automático"
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("Microfone dos sons:").font(.caption).foregroundStyle(.secondary)
+            Menu {
+                Button {
+                    soundboard.chooseMicrophone(nil)
+                } label: {
+                    if soundboard.chosenMicrophoneUID == nil {
+                        Label("Automático (o do sistema)", systemImage: "checkmark")
+                    } else {
+                        Text("Automático (o do sistema)")
+                    }
+                }
+                Divider()
+                ForEach(soundboard.microphones) { mic in
+                    Button {
+                        soundboard.chooseMicrophone(mic.uid)
+                    } label: {
+                        if mic.uid == soundboard.chosenMicrophoneUID {
+                            Label(mic.name, systemImage: "checkmark")
+                        } else {
+                            Text(mic.name)
+                        }
+                    }
+                }
+            } label: {
+                Text(currentName).font(.caption).lineLimit(1)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.visible)
+            .fixedSize()
+        }
+        .accessibilityElement(children: .contain)
     }
 }

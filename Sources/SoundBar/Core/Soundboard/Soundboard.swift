@@ -20,6 +20,9 @@ final class Soundboard: ObservableObject {
     @Published private(set) var sounds: [Sound]
     @Published private(set) var state: SoundboardState = .noDriver
     @Published var errorMessage: String?
+    /// The real microphones the sounds can be mixed with, and the one the user chose (nil: the system's default).
+    @Published private(set) var microphones: [SoundboardRouting.Device] = []
+    @Published private(set) var chosenMicrophoneUID: String?
 
     let library: SoundLibrary
 
@@ -34,10 +37,22 @@ final class Soundboard: ObservableObject {
     /// How many refreshes (about a second each) the feed stays up after the call stopped reading the virtual
     /// microphone, so a call that restarts its audio does not make the feed flap.
     private static let feedLinger = 3
+    private static let microphoneKey = "soundboardMicrophoneUID"
 
     init(library: SoundLibrary = SoundLibrary(directory: SoundLibrary.defaultDirectory)) {
         self.library = library
         sounds = library.sounds
+        chosenMicrophoneUID = UserDefaults.standard.string(forKey: Self.microphoneKey)
+    }
+
+    /// Chooses the microphone the sounds are mixed with; nil goes back to the system's default input.
+    func chooseMicrophone(_ uid: String?) {
+        chosenMicrophoneUID = uid
+        if let uid {
+            UserDefaults.standard.set(uid, forKey: Self.microphoneKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.microphoneKey)
+        }
     }
 
     // MARK: - Playing
@@ -97,8 +112,9 @@ final class Soundboard: ObservableObject {
 
     /// Called about once a second with the audio processes: starts the feed when an app reads the virtual
     /// microphone, stops it a few seconds after that ends.
-    func update(processes: [AudioProcess]) {
-        let devices = AudioDevices.all()
+    func update(processes: [AudioProcess], devices: [SoundboardRouting.Device]) {
+        let real = SoundboardRouting.realMicrophones(in: devices)
+        if real != microphones { microphones = real }
         guard let virtual = SoundboardRouting.blackHole(in: devices) else {
             stopFeed()
             setState(.noDriver)
@@ -118,7 +134,7 @@ final class Soundboard: ObservableObject {
 
         guard
             let mic = SoundboardRouting.microphone(
-                defaultInputUID: AudioDevices.defaultInputUID(), devices: devices)
+                preferredUID: chosenMicrophoneUID, defaultInputUID: AudioDevices.defaultInputUID(), devices: devices)
         else {
             stopFeed()
             setState(.failed("Nenhum microfone encontrado."))

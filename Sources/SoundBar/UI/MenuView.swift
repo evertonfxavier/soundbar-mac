@@ -13,6 +13,8 @@ struct MenuView: View {
             DeviceRow(
                 title: "Saída",
                 device: mixer.output,
+                choices: mixer.outputDevices,
+                select: { mixer.selectDevice(uid: $0, input: false) },
                 onSymbol: "speaker.wave.2.fill",
                 offSymbol: "speaker.slash.fill",
                 setVolume: mixer.setOutputVolume,
@@ -22,6 +24,8 @@ struct MenuView: View {
             DeviceRow(
                 title: "Microfone",
                 device: mixer.input,
+                choices: mixer.inputDevices,
+                select: { mixer.selectDevice(uid: $0, input: true) },
                 onSymbol: "mic.fill",
                 offSymbol: "mic.slash.fill",
                 setVolume: mixer.setInputVolume,
