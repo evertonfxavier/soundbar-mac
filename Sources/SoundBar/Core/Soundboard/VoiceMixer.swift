@@ -10,6 +10,44 @@ final class SoundClip: @unchecked Sendable {
         self.samples = samples
         frames = samples.count / 2
     }
+
+    /// The part from `trimStart` to `trimEnd` seconds (nil: to the end), scaled to a common volume when `normalize`
+    /// is set. Throws `emptyTrim` when nothing is left.
+    func processed(sampleRate: Double, trimStart: Double, trimEnd: Double?, normalize: Bool) throws -> SoundClip {
+        let first = max(0, min(frames, Int((max(0, trimStart) * sampleRate).rounded())))
+        let last = max(first, min(frames, trimEnd.map { Int((max(0, $0) * sampleRate).rounded()) } ?? frames))
+        guard last > first else { throw AudioDecoder.DecodeError.emptyTrim }
+        var part = (first == 0 && last == frames) ? samples : Array(samples[(first * 2)..<(last * 2)])
+        if normalize {
+            let gain = AudioAnalysis.normalizationGain(samples: part)
+            if gain != 1 { part = part.map { max(-1, min(1, $0 * gain)) } }
+        }
+        return SoundClip(samples: part)
+    }
+
+    /// The clip as a 16-bit stereo WAV file in memory, for `AVAudioPlayer` (the speakers play what the call gets).
+    func wavData(sampleRate: Double) -> Data {
+        let dataSize = UInt32(samples.count * 2)
+        var data = Data()
+        func put32(_ value: UInt32) { withUnsafeBytes(of: value.littleEndian) { data.append(contentsOf: $0) } }
+        func put16(_ value: UInt16) { withUnsafeBytes(of: value.littleEndian) { data.append(contentsOf: $0) } }
+        data.append(contentsOf: Array("RIFF".utf8))
+        put32(36 + dataSize)
+        data.append(contentsOf: Array("WAVEfmt ".utf8))
+        put32(16)
+        put16(1)  // PCM
+        put16(2)  // stereo
+        put32(UInt32(sampleRate))
+        put32(UInt32(sampleRate) * 4)
+        put16(4)
+        put16(16)
+        data.append(contentsOf: Array("data".utf8))
+        put32(dataSize)
+        for sample in samples {
+            put16(UInt16(bitPattern: Int16(max(-1, min(1, sample)) * Float(Int16.max))))
+        }
+        return data
+    }
 }
 
 /// The sounds that are playing into the call. `trigger` starts one (from the main thread); `render` adds all of them,
@@ -26,6 +64,10 @@ final class VoiceMixer: @unchecked Sendable {
     }
 
     private var voices: [Voice] = []
+    /// Set from the main thread: the call hears nothing, neither the voice nor the sounds.
+    private var callMuted = false
+    /// What the audio thread last saw of `callMuted`; only that thread touches it.
+    private var seenMuted = false
     private let lock: UnsafeMutablePointer<os_unfair_lock>
 
     init() {
@@ -50,6 +92,22 @@ final class VoiceMixer: @unchecked Sendable {
         defer { os_unfair_lock_unlock(lock) }
         if voices.count == Self.maxVoices { voices.removeFirst() }
         voices.append(Voice(clip: clip, gain: gain))
+    }
+
+    func setCallMuted(_ muted: Bool) {
+        os_unfair_lock_lock(lock)
+        defer { os_unfair_lock_unlock(lock) }
+        callMuted = muted
+    }
+
+    /// For the audio thread: whether the call is muted. If the main thread holds the lock at that moment, the answer
+    /// of the previous block stands, so it never waits.
+    func isCallMutedForRender() -> Bool {
+        if os_unfair_lock_trylock(lock) {
+            seenMuted = callMuted
+            os_unfair_lock_unlock(lock)
+        }
+        return seenMuted
     }
 
     func stopAll() {

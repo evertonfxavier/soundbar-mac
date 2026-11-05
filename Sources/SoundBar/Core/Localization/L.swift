@@ -27,6 +27,18 @@ enum L: CaseIterable {
     // Errors
     case errChooseAudio, errImageUnreadable, errAudioUnreadable, errSoundTooLong
     case errDeviceMissing, errStepFailed, stepCreateAggregate, stepCreateIOProc, stepStartAudio
+    case errTrimEmpty, errExportFailed, errNotALibrary
+    // The soundboard: groups, search, volume, the call
+    case searchSounds, allGroups, masterVolume, sendToCall, sendToCallHelp
+    case muteCall, unmuteCall, callMutedStatus, moveEarlier, moveLater
+    // The library: more actions, export and import
+    case libraryMenu, exportLibrary, importLibrary, importResult, exportFilePrompt, importFilePrompt
+    // The sound editor: group, section, volume, shortcut
+    case fieldGroup, groupPlaceholder, fieldTrim, trimStart, trimEnd, secondsValue, normalizeVolume, normalizeHelp
+    case fieldShortcut, recordShortcut, pressShortcut, clearShortcut, noShortcut
+    // Shortcuts
+    case shortcutsMenu, shortcutsTitle, shortcutsHelp, actionStopAll, actionCallMute, actionMicMute
+    case shortcutNeedsModifier, shortcutInUse, shortcutUnavailable
 
     /// The text in Portuguese, English and Spanish.
     var translations: (pt: String, en: String, es: String) {
@@ -178,6 +190,95 @@ enum L: CaseIterable {
             ("Criar o dispositivo agregado", "Creating the aggregate device", "Crear el dispositivo agregado")
         case .stepCreateIOProc: ("Criar o IOProc", "Creating the IOProc", "Crear el IOProc")
         case .stepStartAudio: ("Iniciar o áudio", "Starting the audio", "Iniciar el audio")
+        case .errTrimEmpty:
+            ("O trecho escolhido está vazio.", "The chosen section is empty.", "El fragmento elegido está vacío.")
+        case .errExportFailed:
+            (
+                "Não consegui exportar a biblioteca.", "Couldn't export the library.",
+                "No pude exportar la biblioteca."
+            )
+        case .errNotALibrary:
+            (
+                "Esse arquivo não é uma biblioteca do SoundBar.", "That file is not a SoundBar library.",
+                "Ese archivo no es una biblioteca de SoundBar."
+            )
+
+        case .searchSounds: ("Buscar sons", "Search sounds", "Buscar sonidos")
+        case .allGroups: ("Todos", "All", "Todos")
+        case .masterVolume: ("Volume dos sons", "Sounds volume", "Volumen de los sonidos")
+        case .sendToCall: ("Enviar à chamada", "Send to the call", "Enviar a la llamada")
+        case .sendToCallHelp:
+            (
+                "Desligado, só você ouve os sons", "Off, only you hear the sounds",
+                "Desactivado, solo tú oyes los sonidos"
+            )
+        case .muteCall: ("Silenciar a chamada", "Mute the call", "Silenciar la llamada")
+        case .unmuteCall: ("Reativar a chamada", "Unmute the call", "Reactivar la llamada")
+        case .callMutedStatus:
+            (
+                "Chamada silenciada: ninguém ouve sua voz nem os sons.",
+                "Call muted: nobody hears your voice or the sounds.",
+                "Llamada silenciada: nadie oye tu voz ni los sonidos."
+            )
+        case .moveEarlier: ("Mover para antes", "Move earlier", "Mover antes")
+        case .moveLater: ("Mover para depois", "Move later", "Mover después")
+
+        case .libraryMenu: ("Mais opções", "More options", "Más opciones")
+        case .exportLibrary: ("Exportar biblioteca…", "Export library…", "Exportar biblioteca…")
+        case .importLibrary: ("Importar biblioteca…", "Import library…", "Importar biblioteca…")
+        case .importResult:
+            (
+                "%@ adicionado(s), %@ já existia(m), %@ com erro.", "%@ added, %@ already there, %@ failed.",
+                "%@ añadido(s), %@ ya existían, %@ con error."
+            )
+        case .exportFilePrompt: ("Exportar", "Export", "Exportar")
+        case .importFilePrompt: ("Importar", "Import", "Importar")
+
+        case .fieldGroup: ("Grupo", "Group", "Grupo")
+        case .groupPlaceholder: ("Sem grupo", "No group", "Sin grupo")
+        case .fieldTrim: ("Trecho", "Section", "Fragmento")
+        case .trimStart: ("Início", "Start", "Inicio")
+        case .trimEnd: ("Fim", "End", "Fin")
+        case .secondsValue: ("%@ s", "%@ s", "%@ s")
+        case .normalizeVolume: ("Normalizar o volume", "Normalize the volume", "Normalizar el volumen")
+        case .normalizeHelp:
+            (
+                "Deixa este som com um volume parecido com o dos outros",
+                "Brings this sound to a volume like the others'",
+                "Deja este sonido con un volumen parecido al de los demás"
+            )
+        case .fieldShortcut: ("Atalho", "Shortcut", "Atajo")
+        case .recordShortcut: ("Gravar atalho", "Record shortcut", "Grabar atajo")
+        case .pressShortcut: ("Pressione o atalho…", "Press the shortcut…", "Pulsa el atajo…")
+        case .clearShortcut: ("Limpar", "Clear", "Borrar")
+        case .noShortcut: ("Nenhum", "None", "Ninguno")
+
+        case .shortcutsMenu: ("Atalhos…", "Shortcuts…", "Atajos…")
+        case .shortcutsTitle: ("Atalhos", "Shortcuts", "Atajos")
+        case .shortcutsHelp:
+            (
+                "Funcionam em qualquer app, com o SoundBar em segundo plano. Cada som tem o seu no editor.",
+                "They work in any app, with SoundBar in the background. Each sound has its own in the editor.",
+                "Funcionan en cualquier app, con SoundBar en segundo plano. Cada sonido tiene el suyo en el editor."
+            )
+        case .actionStopAll: ("Parar todos os sons", "Stop all sounds", "Detener todos los sonidos")
+        case .actionCallMute: ("Silenciar a chamada", "Mute the call", "Silenciar la llamada")
+        case .actionMicMute: ("Silenciar o microfone", "Mute the microphone", "Silenciar el micrófono")
+        case .shortcutNeedsModifier:
+            (
+                "Use pelo menos ⌃, ⌥ ou ⌘ junto com a tecla.", "Use at least ⌃, ⌥ or ⌘ with the key.",
+                "Usa al menos ⌃, ⌥ o ⌘ junto con la tecla."
+            )
+        case .shortcutInUse:
+            (
+                "Esse atalho já é usado por “%@”.", "That shortcut is already used by “%@”.",
+                "Ese atajo ya lo usa “%@”."
+            )
+        case .shortcutUnavailable:
+            (
+                "Outro app já usa esse atalho.", "Another app already uses that shortcut.",
+                "Otra app ya usa ese atajo."
+            )
         }
     }
 

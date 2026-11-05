@@ -19,16 +19,31 @@ final class SoundLibrary {
         /// The audio file to copy in. Required to add a sound; when changing one, nil keeps the audio it has.
         var audio: URL?
         var volume: Float = 1
+        var group: String?
+        var trimStart: Double = 0
+        var trimEnd: Double?
+        var normalize = false
+    }
+
+    /// What `importLibrary` did: how many sounds it added, left out (already there) and could not read.
+    struct TransferResult: Equatable {
+        var added = 0
+        var skipped = 0
+        var failed = 0
     }
 
     enum LibraryError: LocalizedError, Equatable {
         case noAudio
         case iconUnreadable
+        case exportFailed
+        case notALibrary
 
         var errorDescription: String? {
             switch self {
             case .noAudio: L.errChooseAudio.string
             case .iconUnreadable: L.errImageUnreadable.string
+            case .exportFailed: L.errExportFailed.string
+            case .notALibrary: L.errNotALibrary.string
             }
         }
     }
@@ -83,7 +98,8 @@ final class SoundLibrary {
         }
         let sound = Sound(
             id: id, name: Self.name(draft.name, source: source), icon: icon, fileName: audio,
-            volume: Self.clamped(draft.volume))
+            volume: Self.clamped(draft.volume), group: Self.group(draft.group), trimStart: max(0, draft.trimStart),
+            trimEnd: draft.trimEnd, normalize: draft.normalize)
         sounds.append(sound)
         try save()
         return sound
@@ -107,6 +123,10 @@ final class SoundLibrary {
         }
         sound.name = Self.name(draft.name, source: draft.audio ?? audioURL(for: before))
         sound.volume = Self.clamped(draft.volume)
+        sound.group = Self.group(draft.group)
+        sound.trimStart = max(0, draft.trimStart)
+        sound.trimEnd = draft.trimEnd
+        sound.normalize = draft.normalize
 
         sounds[index] = sound
         try save()
@@ -123,6 +143,123 @@ final class SoundLibrary {
         try? fileManager.removeItem(at: audioURL(for: sound))
         removeImage(of: sound.icon)
         try? save()
+    }
+
+    // MARK: - Order and groups
+
+    /// The groups in use, in the order they first appear.
+    var groups: [String] { SoundFilter.groups(of: sounds) }
+
+    /// Puts the sound just before `target`, or at the end when `target` is nil or unknown.
+    func move(_ id: UUID, before target: UUID?) {
+        guard let from = sounds.firstIndex(where: { $0.id == id }), id != target else { return }
+        let sound = sounds.remove(at: from)
+        if let target, let to = sounds.firstIndex(where: { $0.id == target }) {
+            sounds.insert(sound, at: to)
+        } else {
+            sounds.append(sound)
+        }
+        try? save()
+    }
+
+    /// Moves the sound `offset` places (negative: earlier), stopping at the ends.
+    func shift(_ id: UUID, by offset: Int) {
+        guard let from = sounds.firstIndex(where: { $0.id == id }) else { return }
+        let to = max(0, min(sounds.count - 1, from + offset))
+        guard to != from else { return }
+        sounds.insert(sounds.remove(at: from), at: to)
+        try? save()
+    }
+
+    // MARK: - Export and import
+
+    private static let maxImported = 1000
+
+    /// Writes the whole library (the sounds, the icons and the list) to a zip file at `destination`.
+    func export(to destination: URL) throws {
+        let staging = fileManager.temporaryDirectory.appendingPathComponent("soundbar-export-\(UUID().uuidString)")
+        defer { try? fileManager.removeItem(at: staging) }
+        do {
+            try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
+            try save()
+            try fileManager.copyItem(at: indexURL, to: staging.appendingPathComponent("library.json"))
+            try fileManager.copyItem(at: soundsDirectory, to: staging.appendingPathComponent("sounds"))
+            try fileManager.copyItem(at: iconsDirectory, to: staging.appendingPathComponent("icons"))
+            try? fileManager.removeItem(at: destination)
+            try Self.ditto(["-c", "-k", staging.path, destination.path])
+        } catch {
+            throw LibraryError.exportFailed
+        }
+    }
+
+    /// Adds the sounds of a zip made by `export`. A sound that is already here (same id) is left out, and one whose
+    /// audio cannot be read, or is too long, is counted as failed; nothing else is changed. The names inside the file
+    /// are only trusted as plain file names, never as paths.
+    @discardableResult
+    func importLibrary(from archive: URL) throws -> TransferResult {
+        let staging = fileManager.temporaryDirectory.appendingPathComponent("soundbar-import-\(UUID().uuidString)")
+        defer { try? fileManager.removeItem(at: staging) }
+        try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
+        do {
+            try Self.ditto(["-x", "-k", archive.path, staging.path])
+        } catch {
+            throw LibraryError.notALibrary
+        }
+        guard let data = try? Data(contentsOf: staging.appendingPathComponent("library.json")),
+            let incoming = try? JSONDecoder().decode([Sound].self, from: data)
+        else { throw LibraryError.notALibrary }
+
+        var result = TransferResult()
+        for sound in incoming.prefix(Self.maxImported) {
+            if sounds.contains(where: { $0.id == sound.id }) {
+                result.skipped += 1
+                continue
+            }
+            guard Self.isPlainFileName(sound.fileName) else {
+                result.failed += 1
+                continue
+            }
+            do {
+                let audio = try importAudio(
+                    staging.appendingPathComponent("sounds").appendingPathComponent(sound.fileName))
+                var added = sound
+                added.fileName = audio
+                added.group = Self.group(sound.group)
+                added.volume = Self.clamped(sound.volume)
+                switch sound.icon {
+                case .emoji:
+                    break
+                case .image(let name):
+                    let source = staging.appendingPathComponent("icons").appendingPathComponent(name)
+                    if Self.isPlainFileName(name), fileManager.fileExists(atPath: source.path) {
+                        added.icon = try resolve(.image(source), keeping: .emoji(Sound.defaultEmoji))
+                    } else {
+                        added.icon = .emoji(Sound.defaultEmoji)
+                    }
+                }
+                sounds.append(added)
+                result.added += 1
+            } catch {
+                result.failed += 1
+            }
+        }
+        if result.added > 0 { try save() }
+        return result
+    }
+
+    private static func isPlainFileName(_ name: String) -> Bool {
+        !name.isEmpty && !name.hasPrefix(".") && !name.contains("/") && !name.contains("\\") && name != ".."
+    }
+
+    private static func ditto(_ arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        process.arguments = arguments
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw LibraryError.exportFailed }
     }
 
     // MARK: - Files
@@ -176,6 +313,12 @@ final class SoundLibrary {
     // MARK: - Helpers
 
     private static func clamped(_ volume: Float) -> Float { max(0, min(1, volume)) }
+
+    /// The group as typed, trimmed; nil when it is empty.
+    private static func group(_ typed: String?) -> String? {
+        let trimmed = typed?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
 
     /// The name the user typed, or the name of the audio file when they typed none.
     private static func name(_ typed: String, source: URL) -> String {

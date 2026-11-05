@@ -77,9 +77,24 @@ hoc), so the permissions are asked again after it.
 
 ## The soundboard
 
-The **SONOPLASTIA** section of the menu is a grid of buttons, one per sound. Click one to play it; right-click to edit
-or remove it; **+** adds a sound (any audio file of up to 30 seconds, a name, an emoji or an image as the icon, and a
-volume). The sounds are kept in `~/Library/Application Support/SoundBar`. You always hear them on your own speakers.
+The **SONOPLASTIA** section of the menu is a grid of buttons, one per sound. Click one to play it; right-click to edit,
+move or remove it; **+** adds a sound (any audio file of up to 30 seconds). The sounds are kept in
+`~/Library/Application Support/SoundBar`. You always hear them on your own speakers.
+
+- **Each sound** has a name, an emoji or an image as the icon, a volume, an optional **group**, the **section** of the
+  file to play (a start and an end) and **Normalizar o volume**, which brings it to a level like the others'.
+- **Order and groups:** drag a button onto another to reorder (or use *Mover para antes/depois* in the right-click
+  menu). Once any sound has a group, chips above the grid show one group at a time; with more than 12 sounds a search
+  box appears.
+- **Volume dos sons** (the slider under the grid) is the volume of all of them together. **Enviar à chamada** off makes
+  the sounds play only for you.
+- **Atalhos globais** (in the **⋯** menu, and in each sound's editor): a key combination, with Control, Option or
+  Command, that works in any app. There are shortcuts for each sound, for stopping all sounds, for **muting the call**
+  and for muting the microphone.
+- **Mute the call** (the microphone button next to the status, or its shortcut) silences what the call hears from
+  SoundBar, your voice and the sounds together, whatever the call app's own mute button says.
+- **Export and import** (in the **⋯** menu) write and read the whole library as one zip file, to back it up or move it
+  to another Mac. Importing never replaces anything: sounds that are already there are left out.
 
 **To have the other side of a call hear them**, macOS needs a virtual microphone to carry the sound, and SoundBar uses
 [BlackHole](https://existential.audio/blackhole/) (free, open source):

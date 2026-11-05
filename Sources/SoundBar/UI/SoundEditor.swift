@@ -29,6 +29,8 @@ final class SoundEditorModel: ObservableObject {
     enum IconKind: Hashable { case emoji, image }
 
     static let quickEmojis = ["🔊", "😂", "👏", "🥁", "🎺", "💥", "😱", "🎉", "🚨", "🤔", "👀", "🔔"]
+    /// The shortest part of a sound that can be kept, in seconds.
+    static let minimumSection = 0.1
 
     @Published var name: String
     @Published var iconKind: IconKind
@@ -36,12 +38,27 @@ final class SoundEditorModel: ObservableObject {
     @Published var imageURL: URL?
     @Published var audioURL: URL?
     @Published var volume: Double
+    @Published var group: String
+    @Published var normalize: Bool
+    @Published var shortcut: KeyCombo?
+    @Published var shortcutMessage: String?
     @Published var errorMessage: String?
+    /// The length of the audio, in seconds (0 when it cannot be read), and the part of it that is kept.
+    @Published private(set) var duration: Double
+    @Published var trimStart: Double {
+        didSet {
+            if trimStart > trimEnd - Self.minimumSection { trimEnd = min(duration, trimStart + Self.minimumSection) }
+        }
+    }
+    @Published var trimEnd: Double {
+        didSet {
+            if trimEnd < trimStart + Self.minimumSection { trimStart = max(0, trimEnd - Self.minimumSection) }
+        }
+    }
 
-    let isNew: Bool
-    /// The audio the sound has now, shown when no new file was picked.
-    let currentAudioName: String?
-    private let sound: Sound?
+    /// False once a new sound has been saved: saving again changes that sound instead of adding another.
+    private(set) var isNew: Bool
+    private(set) var sound: Sound?
     private let soundboard: Soundboard
     private let close: () -> Void
     private var preview: AVAudioPlayer?
@@ -53,7 +70,13 @@ final class SoundEditorModel: ObservableObject {
         isNew = sound == nil
         name = sound?.name ?? ""
         volume = Double(sound?.volume ?? 1)
-        currentAudioName = sound?.fileName
+        group = sound?.group ?? ""
+        normalize = sound?.normalize ?? true
+        shortcut = sound.flatMap { soundboard.shortcuts.combo(for: .sound($0.id)) }
+        let length = sound.flatMap { try? AudioDecoder.duration(of: soundboard.library.audioURL(for: $0)) } ?? 0
+        duration = length
+        trimStart = min(sound?.trimStart ?? 0, length)
+        trimEnd = min(sound?.trimEnd ?? length, length)
         switch sound?.icon {
         case .image:
             iconKind = .image
@@ -67,7 +90,12 @@ final class SoundEditorModel: ObservableObject {
         }
     }
 
+    var existingGroups: [String] { soundboard.groups }
+
     var canSave: Bool { isNew ? audioURL != nil : true }
+
+    /// Only a sound whose length is known can be cut.
+    var canTrim: Bool { duration > Self.minimumSection }
 
     var audioLabel: String {
         audioURL?.lastPathComponent ?? (isNew ? L.noFileChosen.string : L.keepCurrentSound.string)
@@ -80,6 +108,10 @@ final class SoundEditorModel: ObservableObject {
         panel.message = L.chooseSoundPanel.formatted(String(Int(AudioDecoder.maxDuration)))
         guard panel.runModal() == .OK, let url = panel.url else { return }
         audioURL = url
+        let length = (try? AudioDecoder.duration(of: url)) ?? 0
+        duration = length
+        trimStart = 0
+        trimEnd = length
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
             name = url.deletingPathExtension().lastPathComponent
         }
@@ -94,40 +126,75 @@ final class SoundEditorModel: ObservableObject {
         iconKind = .image
     }
 
-    /// Plays the chosen file (or the one the sound has) on the speakers, to check it before saving.
+    /// `nil` when the part kept runs to the end of the audio.
+    private var effectiveTrimEnd: Double? { canTrim && trimEnd < duration - 0.005 ? trimEnd : nil }
+
+    /// Plays the part that is kept (with the volume and the levelling chosen) on the speakers, before saving.
     func togglePreview() {
         if let preview, preview.isPlaying {
             preview.stop()
             return
         }
-        let url = audioURL ?? sound.map { soundboard.library.audioURL(for: $0) }
-        guard let url, let player = try? AVAudioPlayer(contentsOf: url) else {
+        guard let url = audioURL ?? sound.map({ soundboard.library.audioURL(for: $0) }) else {
             errorMessage = L.couldNotPlayFile.string
             return
         }
-        player.volume = Float(volume)
-        player.play()
-        preview = player
+        do {
+            let player = try soundboard.previewPlayer(
+                url: url, trimStart: canTrim ? trimStart : 0, trimEnd: effectiveTrimEnd, normalize: normalize,
+                volume: Float(volume))
+            player.play()
+            preview = player
+            errorMessage = nil
+        } catch let error as AudioDecoder.DecodeError {
+            errorMessage = error.localizedDescription
+        } catch {
+            errorMessage = L.couldNotPlayFile.string
+        }
     }
 
     func save() {
         preview?.stop()
+        errorMessage = nil
+        if let combo = shortcut,
+            let other = soundboard.shortcuts.conflict(for: combo, excluding: sound.map { .sound($0.id) })
+        {
+            errorMessage = L.shortcutInUse.formatted(soundboard.name(of: other))
+            return
+        }
+
         let icon: SoundLibrary.Draft.Icon
         switch iconKind {
         case .emoji: icon = .emoji(emoji)
         case .image: icon = imageURL.map { .image($0) } ?? .keep
         }
-        let draft = SoundLibrary.Draft(name: name, icon: icon, audio: audioURL, volume: Float(volume))
+        let draft = SoundLibrary.Draft(
+            name: name, icon: icon, audio: audioURL, volume: Float(volume), group: group,
+            trimStart: canTrim ? trimStart : 0, trimEnd: effectiveTrimEnd, normalize: normalize)
+
+        let saved: Sound
         do {
             if let sound {
                 try soundboard.update(sound, with: draft)
+                saved = soundboard.sounds.first { $0.id == sound.id } ?? sound
             } else {
-                try soundboard.add(draft)
+                saved = try soundboard.add(draft)
             }
-            close()
         } catch {
             errorMessage = error.localizedDescription
+            return
         }
+        // The sound is saved from here on: saving again must change it, not add another.
+        sound = saved
+        isNew = false
+        audioURL = nil
+
+        let result = soundboard.shortcuts.assign(shortcut, to: .sound(saved.id))
+        if let problem = soundboard.problem(with: result) {
+            errorMessage = problem
+            return
+        }
+        close()
     }
 
     func cancel() {
@@ -154,6 +221,15 @@ struct SoundEditorView: View {
                         .truncationMode(.middle)
                     Spacer()
                     Button(L.choose.string) { model.chooseAudio() }
+                }
+            }
+
+            if model.canTrim {
+                LabeledContent(L.fieldTrim.string) {
+                    VStack(spacing: 4) {
+                        sectionRow(L.trimStart.string, value: $model.trimStart)
+                        sectionRow(L.trimEnd.string, value: $model.trimEnd)
+                    }
                 }
             }
 
@@ -192,13 +268,47 @@ struct SoundEditorView: View {
                 }
             }
 
-            LabeledContent(L.fieldVolume.string) {
+            LabeledContent(L.fieldGroup.string) {
                 HStack {
-                    Slider(value: $model.volume, in: 0...1)
-                    Text("\(Int((model.volume * 100).rounded()))%")
-                        .font(.caption.monospacedDigit())
-                        .frame(width: 40, alignment: .trailing)
+                    TextField(L.groupPlaceholder.string, text: $model.group)
+                        .textFieldStyle(.roundedBorder)
+                    if !model.existingGroups.isEmpty {
+                        Menu {
+                            ForEach(model.existingGroups, id: \.self) { group in
+                                Button(group) { model.group = group }
+                            }
+                        } label: {
+                            Image(systemName: "chevron.down.circle")
+                        }
+                        .menuStyle(.borderlessButton)
+                        .menuIndicator(.hidden)
+                        .fixedSize()
+                    }
                 }
+            }
+
+            LabeledContent(L.fieldVolume.string) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Slider(value: $model.volume, in: 0...1)
+                        Text("\(Int((model.volume * 100).rounded()))%")
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                    Toggle(L.normalizeVolume.string, isOn: $model.normalize)
+                        .toggleStyle(.checkbox)
+                        .help(L.normalizeHelp.string)
+                }
+            }
+
+            LabeledContent(L.fieldShortcut.string) {
+                ShortcutRecorder(combo: $model.shortcut, message: $model.shortcutMessage)
+            }
+            if let message = model.shortcutMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let message = model.errorMessage {
@@ -220,6 +330,16 @@ struct SoundEditorView: View {
             }
         }
         .padding(20)
-        .frame(width: 400)
+        .frame(width: 420)
+    }
+
+    private func sectionRow(_ title: String, value: Binding<Double>) -> some View {
+        HStack(spacing: 8) {
+            Text(title).font(.caption).frame(width: 38, alignment: .leading)
+            Slider(value: value, in: 0...max(model.duration, SoundEditorModel.minimumSection))
+            Text(L.secondsValue.formatted(String(format: "%.2f", value.wrappedValue)))
+                .font(.caption.monospacedDigit())
+                .frame(width: 52, alignment: .trailing)
+        }
     }
 }

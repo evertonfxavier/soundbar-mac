@@ -61,6 +61,10 @@ final class Mixer: ObservableObject {
             if sorted != self.browserTabs { self.browserTabs = sorted }
             if connected != self.browserConnected { self.browserConnected = connected }
         }
+        soundboard.shortcuts.onAction = { [weak self] action in
+            guard let self else { return }
+            if action == .micMute { self.toggleInputMute() } else { self.soundboard.perform(action) }
+        }
         bridge.start()
         updater.start()
         listenForDeviceChanges()

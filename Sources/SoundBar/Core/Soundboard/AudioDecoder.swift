@@ -9,10 +9,12 @@ enum AudioDecoder {
     enum DecodeError: LocalizedError, Equatable {
         case unreadable
         case tooLong(seconds: Int)
+        case emptyTrim
 
         var errorDescription: String? {
             switch self {
             case .unreadable: L.errAudioUnreadable.string
+            case .emptyTrim: L.errTrimEmpty.string
             case .tooLong(let seconds):
                 L.errSoundTooLong.formatted(String(seconds), String(Int(AudioDecoder.maxDuration)))
             }
@@ -26,8 +28,11 @@ enum AudioDecoder {
         return Double(file.length) / file.processingFormat.sampleRate
     }
 
-    /// The whole file as interleaved stereo at `sampleRate` (a mono file is played in both channels).
-    static func decode(url: URL, sampleRate: Double) throws -> SoundClip {
+    /// The file as interleaved stereo at `sampleRate` (a mono file is played in both channels), from `trimStart` to
+    /// `trimEnd` seconds (nil: to the end), brought to a common volume when `normalize` is set.
+    static func decode(
+        url: URL, sampleRate: Double, trimStart: Double = 0, trimEnd: Double? = nil, normalize: Bool = false
+    ) throws -> SoundClip {
         let seconds = try duration(of: url)
         guard seconds <= maxDuration else { throw DecodeError.tooLong(seconds: Int(seconds.rounded(.up))) }
 
@@ -66,6 +71,7 @@ enum AudioDecoder {
             samples[frame * 2] = channels[0][frame]
             samples[frame * 2 + 1] = channels[1][frame]
         }
-        return SoundClip(samples: samples)
+        return try SoundClip(samples: samples).processed(
+            sampleRate: sampleRate, trimStart: trimStart, trimEnd: trimEnd, normalize: normalize)
     }
 }
