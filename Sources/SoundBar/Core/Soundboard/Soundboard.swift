@@ -4,7 +4,7 @@ import Foundation
 
 /// Where the soundboard stands.
 enum SoundboardState: Equatable {
-    /// The virtual microphone (BlackHole) is not installed: the sounds only play on the user's own speakers.
+    /// The virtual microphone (BlackHole) is not installed: the soundboard is off until it is.
     case noDriver
     /// BlackHole is there, but no app is using it as its microphone.
     case idle
@@ -38,6 +38,10 @@ final class Soundboard: ObservableObject {
 
     let library: SoundLibrary
     let shortcuts: ShortcutManager
+
+    /// The soundboard works only with the virtual microphone installed: without BlackHole nothing plays, from the
+    /// menu or from a shortcut, and the menu shows how to install it.
+    var isAvailable: Bool { state != .noDriver }
 
     private let voices = VoiceMixer()
     private let defaults: UserDefaults
@@ -100,6 +104,7 @@ final class Soundboard: ObservableObject {
     // MARK: - Playing
 
     func play(_ sound: Sound) {
+        guard isAvailable else { return }
         players.removeAll { !$0.isPlaying }
         let gain = sound.gain(master: masterVolume)
         do {

@@ -7,7 +7,7 @@
 
 A volume mixer for the macOS menu bar.
 
-<p align="center"><img src="assets/screenshot.png" width="380" alt="The SoundBar menu: output and microphone sliders, and one slider for Google Chrome"></p>
+<p align="center"><img src="assets/screenshot.png" width="343" alt="The SoundBar menu: update banner, output and microphone sliders, and the foldable Chrome tabs, Apps and Soundboard sections"></p>
 
 - **Switch the speaker and the microphone** from the menu: the name of each device is a menu of the ones you have.
 - **One slider per app** (and a mute button): turn Spotify down without touching the system volume. Up to 150%.
@@ -15,14 +15,16 @@ A volume mixer for the macOS menu bar.
   for everybody.
 - **One slider per Chrome tab**, and the microphone of each tab, with the companion extension **SoundBar Bridge**.
 - **A soundboard:** add your own sounds, give each an emoji or an image, and play them into a call so the other side hears
-  them (needs the free [BlackHole](https://existential.audio/blackhole/) virtual microphone, see
-  [The soundboard](#the-soundboard)).
+  them. It needs the free [BlackHole](https://existential.audio/blackhole/) virtual microphone: **without it the
+  soundboard is off** (dimmed, with the install instructions), see [The soundboard](#the-soundboard).
+- **Updates in sight:** when a newer release exists, the top of the menu says so (see [Updates](#updates)).
 
 Each section of the menu (**Chrome tabs**, **Apps**, **Soundboard**) folds and unfolds with a click on its title, which
 also shows how many items it holds; the choice is kept between runs.
 
 The interface is in **Portuguese, English and Spanish**: *Idioma / Language* at the bottom of the menu picks one, or
-*Automático* (the default) follows the system's language (English when the system speaks none of the three).
+*Automático* (the default) follows the system's language (English when the system speaks none of the three). This
+document quotes the Portuguese names of the buttons; in the app they follow the language you chose.
 
 ## Install
 
@@ -83,7 +85,14 @@ hoc), so the permissions are asked again after it.
 
 The **SONOPLASTIA** section of the menu is a grid of buttons, one per sound. Click one to play it; right-click to edit,
 move or remove it; **+** adds a sound (any audio file of up to 30 seconds). The sounds are kept in
-`~/Library/Application Support/SoundBar`. You always hear them on your own speakers.
+`~/Library/Application Support/SoundBar`.
+
+**The soundboard needs BlackHole.** Until the virtual microphone is installed the section is dimmed and locked: the
+buttons, the **+**, the **⋯** menu and the global shortcuts do nothing, and the section shows the install command
+(**Copiar comando**) and a link to the site. SoundBar notices BlackHole within a second of its installation, with no
+restart of SoundBar. See [below](#to-have-the-other-side-of-a-call-hear-them) for the setup.
+
+With BlackHole installed you always hear the sounds on your own speakers, and, in a call, the others hear them too.
 
 - **Each sound** has a name, an emoji or an image as the icon, a volume, an optional **group**, the **section** of the
   file to play (a start and an end) and **Normalizar o volume**, which brings it to a level like the others'.
@@ -100,11 +109,14 @@ move or remove it; **+** adds a sound (any audio file of up to 30 seconds). The 
 - **Export and import** (in the **⋯** menu) write and read the whole library as one zip file, to back it up or move it
   to another Mac. Importing never replaces anything: sounds that are already there are left out.
 
-**To have the other side of a call hear them**, macOS needs a virtual microphone to carry the sound, and SoundBar uses
-[BlackHole](https://existential.audio/blackhole/) (free, open source):
+### To have the other side of a call hear them
 
-1. Install it once: `brew install blackhole-2ch` (or the installer from the site), then restart the Mac or run
-   `sudo killall coreaudiod`.
+macOS needs a virtual microphone to carry the sound, and SoundBar uses
+[BlackHole](https://existential.audio/blackhole/) (free, open source). It is not bundled (its license, GPL-3, is not
+the one of SoundBar), so install it yourself:
+
+1. Install it once: `brew install --cask blackhole-2ch` (or the installer from the site), then restart the Mac or run
+   `sudo killall coreaudiod`. The soundboard turns on as soon as macOS lists the device.
 2. In the call app (Meet, Teams, Zoom, Discord…) choose **BlackHole 2ch** as the **microphone**. Leave the speakers as
    they are.
 3. If you have more than one microphone (a headset and the Mac's), pick the one the sounds are mixed with in
@@ -128,7 +140,8 @@ The call app's own mute button mutes BlackHole, so it silences your voice and th
   plays only through Web Audio ignores the slider; the tab's mute button works for every site.
 - **A tab's microphone mute is silent to the site:** the call app keeps showing the microphone as on, while the other
   side hears silence. The mute of the whole microphone (the one in the menu) is the system's, and apps do notice it.
-- **The soundboard needs BlackHole** and the call app set to use it. Meet, Teams and Zoom filter what is not a voice
+- **The soundboard needs BlackHole**, installed and chosen as the microphone of the call app. It is off without it.
+  Meet, Teams and Zoom filter what is not a voice
   (noise suppression, echo cancellation), so a sound effect can come through softer, or cut, depending on the app; that
   is not something SoundBar can switch off. Discord does not do it to its own soundboard, and may to this one.
 - The boost of an app above 100% (up to 150%) is limited to full scale, so a loud source can distort.

@@ -120,9 +120,9 @@ enum L: CaseIterable {
         case .remove: ("Remover", "Remove", "Eliminar")
         case .statusNoDriver:
             (
-                "Para os outros ouvirem os sons na chamada, instale o BlackHole (um microfone virtual gratuito).",
-                "For the others to hear the sounds in the call, install BlackHole (a free virtual microphone).",
-                "Para que los demás oigan los sonidos en la llamada, instala BlackHole (un micrófono virtual gratuito)."
+                "A sonoplastia precisa do BlackHole (um microfone virtual gratuito). Instale para ativar.",
+                "The soundboard needs BlackHole (a free virtual microphone). Install it to turn it on.",
+                "Los efectos de sonido necesitan BlackHole (un micrófono virtual gratuito). Instálalo para activarlos."
             )
         case .copyCommand: ("Copiar comando", "Copy command", "Copiar comando")
         case .website: ("Site", "Website", "Sitio web")
