@@ -123,6 +123,7 @@ struct MenuView: View {
         }
         .padding(14)
         .frame(width: 340)
+        .background(WindowFitter())
     }
 
     private var tabList: some View {
