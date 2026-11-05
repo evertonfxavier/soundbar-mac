@@ -29,6 +29,7 @@ enum L: CaseIterable {
     case errDeviceMissing, errStepFailed, stepCreateAggregate, stepCreateIOProc, stepStartAudio
     case errTrimEmpty, errExportFailed, errNotALibrary
     // The soundboard: groups, search, volume, the call
+    case collapseSection, expandSection, sectionExpanded, sectionCollapsed
     case searchSounds, allGroups, masterVolume, sendToCall, sendToCallHelp
     case muteCall, unmuteCall, callMutedStatus, moveEarlier, moveLater
     // The library: more actions, export and import
@@ -203,6 +204,10 @@ enum L: CaseIterable {
                 "Ese archivo no es una biblioteca de SoundBar."
             )
 
+        case .collapseSection: ("Recolher a seção", "Collapse the section", "Contraer la sección")
+        case .expandSection: ("Expandir a seção", "Expand the section", "Expandir la sección")
+        case .sectionExpanded: ("Expandida", "Expanded", "Expandida")
+        case .sectionCollapsed: ("Recolhida", "Collapsed", "Contraída")
         case .searchSounds: ("Buscar sons", "Search sounds", "Buscar sonidos")
         case .allGroups: ("Todos", "All", "Todos")
         case .masterVolume: ("Volume dos sons", "Sounds volume", "Volumen de los sonidos")

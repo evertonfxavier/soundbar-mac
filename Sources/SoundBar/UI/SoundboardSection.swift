@@ -10,9 +10,10 @@ struct SoundboardSection: View {
     private static let searchThreshold = 12
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            header
-
+        CollapsibleSection(
+            .soundboard, title: L.sectionSoundboard.string, count: soundboard.sounds.count,
+            trailing: { headerButtons }
+        ) {
             if !soundboard.groups.isEmpty {
                 GroupChips()
             }
@@ -75,10 +76,9 @@ struct SoundboardSection: View {
         }
     }
 
-    private var header: some View {
-        HStack {
-            SectionTitle(L.sectionSoundboard.string)
-            Spacer()
+    /// The buttons at the right of the title: stop everything, the library menu and add a sound.
+    private var headerButtons: some View {
+        HStack(spacing: 8) {
             Button {
                 soundboard.stopAll()
             } label: {

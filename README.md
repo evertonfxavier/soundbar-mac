@@ -18,6 +18,9 @@ A volume mixer for the macOS menu bar.
   them (needs the free [BlackHole](https://existential.audio/blackhole/) virtual microphone, see
   [The soundboard](#the-soundboard)).
 
+Each section of the menu (**Chrome tabs**, **Apps**, **Soundboard**) folds and unfolds with a click on its title, which
+also shows how many items it holds; the choice is kept between runs.
+
 The interface is in **Portuguese, English and Spanish**: *Idioma / Language* at the bottom of the menu picks one, or
 *Automático* (the default) follows the system's language (English when the system speaks none of the three).
 
