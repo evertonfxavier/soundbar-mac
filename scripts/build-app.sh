@@ -54,6 +54,8 @@ fi
 
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# The texts of the permission dialogs, one folder per language (Resources/<language>.lproj)
+cp -R Resources/*.lproj "$APP/Contents/Resources/"
 plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP/Contents/Info.plist"
 plutil -replace CFBundleVersion -string "$BUILD" "$APP/Contents/Info.plist"
 

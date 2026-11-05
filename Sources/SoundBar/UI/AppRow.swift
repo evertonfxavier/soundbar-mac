@@ -24,20 +24,20 @@ struct AppRow: View {
                     Text(app.name).font(.callout).lineLimit(1)
                     if app.isPlaying {
                         Image(systemName: "waveform").font(.caption2).foregroundStyle(.green)
-                            .help("Tocando áudio")
-                            .accessibilityLabel("Tocando áudio")
+                            .help(L.playingAudio.string)
+                            .accessibilityLabel(L.playingAudio.string)
                     }
                     if app.isUsingMic {
                         Image(systemName: "mic.fill").font(.caption2).foregroundStyle(.red)
-                            .help("Usando o microfone")
-                            .accessibilityLabel("Usando o microfone")
+                            .help(L.usingMicrophone.string)
+                            .accessibilityLabel(L.usingMicrophone.string)
                     }
                     Spacer()
-                    Text(s.muted ? "mudo" : "\(Int((s.volume * 100).rounded()))%")
+                    Text(s.muted ? L.mutedLabel.string : "\(Int((s.volume * 100).rounded()))%")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(s.isDefault ? .secondary : .primary)
                         .onTapGesture(count: 2) { mixer.reset(app.id) }
-                        .help("Clique duplo para voltar a 100%")
+                        .help(L.doubleClickReset.string)
                 }
                 HStack(spacing: 8) {
                     MuteButton(
@@ -54,7 +54,7 @@ struct AppRow: View {
                     )
                     .controlSize(.small)
                     .disabled(mixer.permission == .denied)
-                    .accessibilityLabel("Volume de \(app.name)")
+                    .accessibilityLabel(L.volumeOf.formatted(app.name))
                 }
                 if let err = mixer.errors[app.id] {
                     Text(err).font(.caption2).foregroundStyle(.red).lineLimit(2)

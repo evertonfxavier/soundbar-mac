@@ -12,9 +12,9 @@ enum AudioDecoder {
 
         var errorDescription: String? {
             switch self {
-            case .unreadable: "Não consegui ler esse arquivo de áudio."
+            case .unreadable: L.errAudioUnreadable.string
             case .tooLong(let seconds):
-                "O som tem \(seconds) s; o máximo é \(Int(AudioDecoder.maxDuration)) s."
+                L.errSoundTooLong.formatted(String(seconds), String(Int(AudioDecoder.maxDuration)))
             }
         }
     }

@@ -9,15 +9,15 @@ struct UpdateBanner: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "arrow.down.circle.fill").foregroundStyle(.blue)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Nova versão: v\(info.version.description)")
+                Text(L.newVersion.formatted(info.version.description))
                     .font(.callout.weight(.semibold))
-                Text("Você está na v\(AppInfo.version). Baixe o instalador e abra-o como da primeira vez.")
+                Text(L.updateBody.formatted(AppInfo.version))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
-                    Button("Baixar") { NSWorkspace.shared.open(info.downloadURL ?? info.pageURL) }
-                    Button("Novidades") { NSWorkspace.shared.open(info.pageURL) }
+                    Button(L.download.string) { NSWorkspace.shared.open(info.downloadURL ?? info.pageURL) }
+                    Button(L.whatsNew.string) { NSWorkspace.shared.open(info.pageURL) }
                 }
                 .controlSize(.small)
             }

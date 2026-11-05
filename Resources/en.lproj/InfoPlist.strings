@@ -1,0 +1,3 @@
+/* Texts the system shows when it asks for a permission. */
+"NSAudioCaptureUsageDescription" = "SoundBar needs to intercept the audio of each app to adjust its volume.";
+"NSMicrophoneUsageDescription" = "SoundBar shows which apps are using the microphone, lets you mute it and mixes it with your sounds in calls.";

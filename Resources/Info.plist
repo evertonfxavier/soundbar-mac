@@ -4,6 +4,14 @@
 <dict>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>pt</string>
+        <string>es</string>
+    </array>
     <key>CFBundleName</key>
     <string>SoundBar</string>
     <key>CFBundleDisplayName</key>
@@ -34,8 +42,8 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSAudioCaptureUsageDescription</key>
-    <string>O SoundBar precisa interceptar o áudio de cada app para ajustar o volume individualmente.</string>
+    <string>SoundBar needs to intercept the audio of each app to adjust its volume.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>O SoundBar mostra quais apps estão usando o microfone e permite mutá-lo.</string>
+    <string>SoundBar shows which apps are using the microphone, lets you mute it and mixes it with your sounds in calls.</string>
 </dict>
 </plist>

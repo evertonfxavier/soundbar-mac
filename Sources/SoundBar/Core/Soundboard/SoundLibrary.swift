@@ -27,8 +27,8 @@ final class SoundLibrary {
 
         var errorDescription: String? {
             switch self {
-            case .noAudio: "Escolha um arquivo de áudio."
-            case .iconUnreadable: "Não consegui ler essa imagem."
+            case .noAudio: L.errChooseAudio.string
+            case .iconUnreadable: L.errImageUnreadable.string
             }
         }
     }

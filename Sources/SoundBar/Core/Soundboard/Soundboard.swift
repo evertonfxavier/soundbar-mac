@@ -65,7 +65,7 @@ final class Soundboard: ObservableObject {
             player.play()
             players.append(player)
         } catch {
-            errorMessage = "Não consegui tocar “\(sound.name)”."
+            errorMessage = L.couldNotPlaySound.formatted(sound.name)
             return
         }
         guard let feed else { return }
@@ -137,7 +137,7 @@ final class Soundboard: ObservableObject {
                 preferredUID: chosenMicrophoneUID, defaultInputUID: AudioDevices.defaultInputUID(), devices: devices)
         else {
             stopFeed()
-            setState(.failed("Nenhum microfone encontrado."))
+            setState(.failed(L.noMicrophoneFound.string))
             return
         }
 

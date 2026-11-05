@@ -21,17 +21,17 @@ struct TabRow: View {
                     Text(tab.displayName).font(.callout).lineLimit(1)
                     if tab.audible {
                         Image(systemName: "waveform").font(.caption2).foregroundStyle(.green)
-                            .accessibilityLabel("Tocando áudio")
+                            .accessibilityLabel(L.playingAudio.string)
                     }
                     if tab.mic {
                         Image(systemName: "mic.fill").font(.caption2).foregroundStyle(.red)
-                            .accessibilityLabel("Usando o microfone")
+                            .accessibilityLabel(L.usingMicrophone.string)
                     }
                     Spacer()
-                    Text(tab.muted ? "mudo" : "\(Int((tab.volume * 100).rounded()))%")
+                    Text(tab.muted ? L.mutedLabel.string : "\(Int((tab.volume * 100).rounded()))%")
                         .font(.caption.monospacedDigit())
                         .onTapGesture(count: 2) { mixer.resetTab(tab) }
-                        .help("Clique duplo para restaurar")
+                        .help(L.doubleClickRestore.string)
                 }
                 if !tab.host.isEmpty && tab.host != tab.displayName {
                     Text(tab.host).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
@@ -50,11 +50,11 @@ struct TabRow: View {
                         ), in: 0...1
                     )
                     .controlSize(.small)
-                    .accessibilityLabel("Volume de \(tab.displayName)")
+                    .accessibilityLabel(L.volumeOf.formatted(tab.displayName))
                     if tab.mic {
                         MuteButton(
                             muted: tab.micMuted, onSymbol: "mic.fill", offSymbol: "mic.slash.fill",
-                            subject: "microfone de \(tab.displayName)"
+                            subject: L.microphoneOfThing.formatted(tab.displayName)
                         ) {
                             mixer.toggleTabMic(tab)
                         }

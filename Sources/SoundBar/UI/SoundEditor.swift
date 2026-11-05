@@ -14,7 +14,7 @@ enum SoundEditorWindow {
         let model = SoundEditorModel(editing: sound, soundboard: soundboard) { window?.close() }
         let controller = NSHostingController(rootView: SoundEditorView(model: model))
         let new = NSWindow(contentViewController: controller)
-        new.title = sound == nil ? "Novo som" : "Editar som"
+        new.title = sound == nil ? L.newSound.string : L.editSound.string
         new.styleMask = [.titled, .closable]
         new.isReleasedWhenClosed = false
         new.center()
@@ -70,14 +70,14 @@ final class SoundEditorModel: ObservableObject {
     var canSave: Bool { isNew ? audioURL != nil : true }
 
     var audioLabel: String {
-        audioURL?.lastPathComponent ?? (isNew ? "Nenhum arquivo escolhido" : "O som atual será mantido")
+        audioURL?.lastPathComponent ?? (isNew ? L.noFileChosen.string : L.keepCurrentSound.string)
     }
 
     func chooseAudio() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.audio]
         panel.allowsMultipleSelection = false
-        panel.message = "Escolha um som (até \(Int(AudioDecoder.maxDuration)) segundos)"
+        panel.message = L.chooseSoundPanel.formatted(String(Int(AudioDecoder.maxDuration)))
         guard panel.runModal() == .OK, let url = panel.url else { return }
         audioURL = url
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -102,7 +102,7 @@ final class SoundEditorModel: ObservableObject {
         }
         let url = audioURL ?? sound.map { soundboard.library.audioURL(for: $0) }
         guard let url, let player = try? AVAudioPlayer(contentsOf: url) else {
-            errorMessage = "Não consegui tocar esse arquivo."
+            errorMessage = L.couldNotPlayFile.string
             return
         }
         player.volume = Float(volume)
@@ -141,33 +141,33 @@ struct SoundEditorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            LabeledContent("Nome") {
-                TextField("Ex.: Aplausos", text: $model.name)
+            LabeledContent(L.fieldName.string) {
+                TextField(L.namePlaceholder.string, text: $model.name)
                     .textFieldStyle(.roundedBorder)
             }
 
-            LabeledContent("Som") {
+            LabeledContent(L.fieldSound.string) {
                 HStack {
                     Text(model.audioLabel)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer()
-                    Button("Escolher…") { model.chooseAudio() }
+                    Button(L.choose.string) { model.chooseAudio() }
                 }
             }
 
-            LabeledContent("Ícone") {
+            LabeledContent(L.fieldIcon.string) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Picker("Ícone", selection: $model.iconKind) {
-                        Text("Emoji").tag(SoundEditorModel.IconKind.emoji)
-                        Text("Imagem").tag(SoundEditorModel.IconKind.image)
+                    Picker(L.fieldIcon.string, selection: $model.iconKind) {
+                        Text(L.emojiOption.string).tag(SoundEditorModel.IconKind.emoji)
+                        Text(L.imageOption.string).tag(SoundEditorModel.IconKind.image)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
 
                     if model.iconKind == .emoji {
-                        TextField("Emoji", text: $model.emoji)
+                        TextField(L.emojiOption.string, text: $model.emoji)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
                         LazyVGrid(columns: Array(repeating: GridItem(.fixed(30)), count: 6), alignment: .leading) {
@@ -184,13 +184,15 @@ struct SoundEditorView: View {
                                     .frame(width: 40, height: 40)
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
-                            Button(model.imageURL == nil ? "Escolher imagem…" : "Trocar…") { model.chooseImage() }
+                            Button(model.imageURL == nil ? L.chooseImage.string : L.change.string) {
+                                model.chooseImage()
+                            }
                         }
                     }
                 }
             }
 
-            LabeledContent("Volume") {
+            LabeledContent(L.fieldVolume.string) {
                 HStack {
                     Slider(value: $model.volume, in: 0...1)
                     Text("\(Int((model.volume * 100).rounded()))%")
@@ -207,12 +209,12 @@ struct SoundEditorView: View {
             }
 
             HStack {
-                Button("Ouvir") { model.togglePreview() }
+                Button(L.listen.string) { model.togglePreview() }
                     .disabled(model.audioURL == nil && model.isNew)
                 Spacer()
-                Button("Cancelar") { model.cancel() }
+                Button(L.cancel.string) { model.cancel() }
                     .keyboardShortcut(.cancelAction)
-                Button("Salvar") { model.save() }
+                Button(L.save.string) { model.save() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!model.canSave)
             }
