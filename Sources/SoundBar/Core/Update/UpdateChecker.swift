@@ -48,22 +48,34 @@ struct UpdateChecker {
     private struct Release: Decodable {
         struct Asset: Decodable {
             let name: String
-            let browser_download_url: String
+            let downloadURL: String
+
+            enum CodingKeys: String, CodingKey {
+                case name
+                case downloadURL = "browser_download_url"
+            }
         }
-        let tag_name: String
-        let html_url: String
+
+        let tagName: String
+        let pageURL: String
         let draft: Bool?
         let prerelease: Bool?
         let assets: [Asset]?
+
+        enum CodingKeys: String, CodingKey {
+            case tagName = "tag_name"
+            case pageURL = "html_url"
+            case draft, prerelease, assets
+        }
     }
 
     static func parse(_ data: Data, newerThan current: AppVersion) throws -> UpdateInfo? {
         guard let release = try? JSONDecoder().decode(Release.self, from: data) else { throw UpdateError.malformed }
         guard release.draft != true, release.prerelease != true,
-            let version = AppVersion(release.tag_name), version > current,
-            let page = trusted(release.html_url)
+            let version = AppVersion(release.tagName), version > current,
+            let page = trusted(release.pageURL)
         else { return nil }
-        let dmg = release.assets?.first { $0.name.hasSuffix(".dmg") }.flatMap { trusted($0.browser_download_url) }
+        let dmg = release.assets?.first { $0.name.hasSuffix(".dmg") }.flatMap { trusted($0.downloadURL) }
         return UpdateInfo(version: version, pageURL: page, downloadURL: dmg)
     }
 
