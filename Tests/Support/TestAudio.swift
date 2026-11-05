@@ -74,3 +74,15 @@ enum TestAudio {
         return SoundClip(samples: samples)
     }
 }
+
+/// Waits until `condition` holds, looking every few milliseconds, for at most `timeout` seconds. For a result that
+/// arrives asynchronously, so a test does not depend on a fixed sleep being long enough on a busy machine.
+@MainActor
+func eventually(timeout: TimeInterval = 3, _ condition: @MainActor () -> Bool) async -> Bool {
+    let end = Date().addingTimeInterval(timeout)
+    while Date() < end {
+        if condition() { return true }
+        try? await Task.sleep(nanoseconds: 20_000_000)
+    }
+    return condition()
+}

@@ -68,7 +68,8 @@ scripts, so what is built on a laptop is what is built there. If you work in Xco
 
 ## Updates
 
-A few seconds after it starts, and then every few hours, SoundBar asks GitHub (the public releases API, no login) for
+A few seconds after it starts, every hour while it stays open, and when you open the menu (at most every five
+minutes), SoundBar asks GitHub (the public releases API, no login) for
 the latest release. When it is newer than the running version, the top of the menu says so, with **Baixar** (the disk
 image) and **Novidades** (the release page). It does not download or install anything by itself: you open the image
 and replace the app, as the first time. **Verificar atualizações** at the bottom of the menu turns the check off; it is
