@@ -13,6 +13,9 @@ A volume mixer for the macOS menu bar.
 - **The microphone, in sight:** the menu bar icon turns into a microphone while any app uses it, and one click mutes it
   for everybody.
 - **One slider per Chrome tab**, and the microphone of each tab, with the companion extension **SoundBar Bridge**.
+- **A soundboard:** add your own sounds, give each an emoji or an image, and play them into a call so the other side hears
+  them (needs the free [BlackHole](https://existential.audio/blackhole/) virtual microphone, see
+  [The soundboard](#the-soundboard)).
 
 The interface is in Portuguese.
 
@@ -61,6 +64,25 @@ Swift Testing). The Command Line Tools of some macOS releases have a Swift Packa
 not even link, so a `Package.swift` would not work for the people who have no Xcode. The pipeline runs these same
 scripts, so what is built on a laptop is what is built there. If you work in Xcode, a package can be added next to them.
 
+## The soundboard
+
+The **SONOPLASTIA** section of the menu is a grid of buttons, one per sound. Click one to play it; right-click to edit
+or remove it; **+** adds a sound (any audio file of up to 30 seconds, a name, an emoji or an image as the icon, and a
+volume). The sounds are kept in `~/Library/Application Support/SoundBar`. You always hear them on your own speakers.
+
+**To have the other side of a call hear them**, macOS needs a virtual microphone to carry the sound, and SoundBar uses
+[BlackHole](https://existential.audio/blackhole/) (free, open source):
+
+1. Install it once: `brew install blackhole-2ch` (or the installer from the site), then restart the Mac or run
+   `sudo killall coreaudiod`.
+2. In the call app (Meet, Teams, Zoom, Discord…) choose **BlackHole 2ch** as the **microphone**. Leave the speakers as
+   they are.
+3. That is all. While an app listens to BlackHole, SoundBar reads your real microphone, adds the sounds to it and
+   writes the result to BlackHole; the menu says *Os sons vão para a chamada*. Your voice and the sounds both go through.
+   When no app uses BlackHole, SoundBar does not touch your microphone.
+
+The call app's own mute button mutes BlackHole, so it silences your voice and the sounds together.
+
 ## Known limits
 
 **What it can and cannot separate**
@@ -74,6 +96,9 @@ scripts, so what is built on a laptop is what is built there. If you work in Xco
   plays only through Web Audio ignores the slider; the tab's mute button works for every site.
 - **A tab's microphone mute is silent to the site:** the call app keeps showing the microphone as on, while the other
   side hears silence. The mute of the whole microphone (the one in the menu) is the system's, and apps do notice it.
+- **The soundboard needs BlackHole** and the call app set to use it. Meet, Teams and Zoom filter what is not a voice
+  (noise suppression, echo cancellation), so a sound effect can come through softer, or cut, depending on the app; that
+  is not something SoundBar can switch off. Discord does not do it to its own soundboard, and may to this one.
 - The boost of an app above 100% (up to 150%) is limited to full scale, so a loud source can distort.
 
 **How it works today**

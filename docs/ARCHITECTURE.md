@@ -8,6 +8,8 @@ Sources/SoundBar/
     Domain/       the rules that need no hardware: AppSetting, AppListing, MicUsage, BrowserTab (tested)
     Audio/        Core Audio: process taps (AppTap), devices, the owner of a process, the TCC permission
     Browser/      the local WebSocket the extension talks to (BrowserBridge) and its messages (BridgeProtocol)
+    Soundboard/   the user's sounds: Sound, SoundLibrary (files + index), VoiceMixer (the realtime sum), AudioDecoder,
+                  SoundboardRouting (which device is which, when to feed), Soundboard (the state the menu shows)
     Mixer.swift   the state of the menu: watches apps and devices, keeps the settings, runs one tap per app
 Tests/            Swift Testing: rules, the realtime gain kernel, the bridge against a real WebSocket client
 ChromeExtension/  the extension, in TypeScript (below)
@@ -48,3 +50,13 @@ the other and one of the two suites fails.
 `chrome-extension://…`: a web page that tries to connect is answered with an error (covered by the bridge tests, which use a real WebSocket client). A
 connection that says nothing for 15 seconds is dropped. The app is not sandboxed, because process taps and the process
 list need it; it is signed with the hardened runtime and the one entitlement that asks for (`audio-input`).
+
+**The soundboard.** A call app can only hear what comes in through a microphone, so the sounds are written to a virtual
+one (BlackHole), which the user chooses as the microphone of the call. `MicFeed` creates a private aggregate device
+`[real microphone, BlackHole]` (its streams follow the order of that list, which `MicFeed.render` relies on; checked on a
+real machine), and its IOProc copies the real microphone into BlackHole's output stream and adds the playing sounds on
+top (`VoiceMixer.render`, which never allocates and never waits on a lock). BlackHole is the clock; the microphone is
+drift compensated. The feed runs only while another process reads BlackHole as its input (`ProcessScanner` lists the
+input devices of each audio process), and stops three refreshes after, so the real microphone is not opened when there is
+no call. Sounds are decoded once for the rate of the aggregate and kept; the same file also plays on the speakers with
+`AVAudioPlayer`.

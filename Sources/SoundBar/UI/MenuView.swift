@@ -82,6 +82,10 @@ struct MenuView: View {
 
             Divider()
 
+            SoundboardSection()
+
+            Divider()
+
             HStack {
                 Toggle(
                     "Abrir ao iniciar sessão",
@@ -128,7 +132,7 @@ enum AppInfo {
     }
 }
 
-private struct SectionTitle: View {
+struct SectionTitle: View {
     let text: String
 
     init(_ text: String) { self.text = text }
