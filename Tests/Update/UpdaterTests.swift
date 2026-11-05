@@ -99,3 +99,77 @@ private final class Locked<T>: @unchecked Sendable {
     var value: T
     init(_ value: T) { self.value = value }
 }
+
+@Suite("Updater at launch")
+@MainActor
+struct UpdaterLaunchTests {
+    private func defaults(lastCheck: Date?) -> UserDefaults {
+        let suite = "soundbar-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        if let lastCheck { defaults.set(lastCheck, forKey: "lastUpdateCheck") }
+        return defaults
+    }
+
+    @Test("starting asks right away, even if it asked a minute ago (the answer is not kept between runs)")
+    func launchAsksEvenIfAskedRecently() async throws {
+        let asked = Counter()
+        let updater = Updater(
+            checker: UpdateChecker(current: AppVersion("0.1.2")!) { _ in
+                asked.count += 1
+                return Self.releaseData("v0.1.4")
+            }, defaults: defaults(lastCheck: Date().addingTimeInterval(-60)))
+
+        updater.start(launchDelay: 0)
+        try await Task.sleep(nanoseconds: 300_000_000)
+
+        #expect(asked.count == 1)
+        #expect(updater.available?.version.description == "0.1.4")
+    }
+
+    @Test("the periodic check respects the interval")
+    func periodicCheckIsThrottled() async throws {
+        let asked = Counter()
+        let updater = Updater(
+            checker: UpdateChecker(current: AppVersion("0.1.2")!) { _ in
+                asked.count += 1
+                return Self.releaseData("v0.1.4")
+            }, defaults: defaults(lastCheck: Date().addingTimeInterval(-60)))
+
+        updater.checkIfDue()
+        try await Task.sleep(nanoseconds: 200_000_000)
+
+        #expect(asked.count == 0)
+    }
+
+    @Test("switching the check back on asks at once")
+    func switchingOnAsks() async throws {
+        let asked = Counter()
+        let store = defaults(lastCheck: Date())
+        store.set(false, forKey: "checkForUpdates")
+        let updater = Updater(
+            checker: UpdateChecker(current: AppVersion("0.1.2")!) { _ in
+                asked.count += 1
+                return Self.releaseData("v0.1.4")
+            }, defaults: store)
+        #expect(!updater.checksForUpdates)
+
+        updater.checksForUpdates = true
+        try await Task.sleep(nanoseconds: 300_000_000)
+
+        #expect(asked.count == 1)
+        #expect(updater.available != nil)
+    }
+
+    private nonisolated static func releaseData(_ tag: String) -> Data {
+        let repo = UpdateChecker.repository
+        return Data(
+            """
+            {"tag_name": "\(tag)", "html_url": "https://github.com/\(repo)/releases/tag/\(tag)", "assets": []}
+            """.utf8)
+    }
+}
+
+private final class Counter: @unchecked Sendable {
+    var count = 0
+}
