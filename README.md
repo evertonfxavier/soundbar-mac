@@ -9,6 +9,7 @@ A volume mixer for the macOS menu bar.
 
 <p align="center"><img src="assets/screenshot.png" width="380" alt="The SoundBar menu: output and microphone sliders, and one slider for Google Chrome"></p>
 
+- **Switch the speaker and the microphone** from the menu: the name of each device is a menu of the ones you have.
 - **One slider per app** (and a mute button): turn Spotify down without touching the system volume. Up to 150%.
 - **The microphone, in sight:** the menu bar icon turns into a microphone while any app uses it, and one click mutes it
   for everybody.
@@ -77,7 +78,9 @@ volume). The sounds are kept in `~/Library/Application Support/SoundBar`. You al
    `sudo killall coreaudiod`.
 2. In the call app (Meet, Teams, Zoom, Discord…) choose **BlackHole 2ch** as the **microphone**. Leave the speakers as
    they are.
-3. That is all. While an app listens to BlackHole, SoundBar reads your real microphone, adds the sounds to it and
+3. If you have more than one microphone (a headset and the Mac's), pick the one the sounds are mixed with in
+   **Microfone dos sons** (in the same section). *Automático* follows the system's input.
+4. That is all. While an app listens to BlackHole, SoundBar reads your real microphone, adds the sounds to it and
    writes the result to BlackHole; the menu says *Os sons vão para a chamada*. Your voice and the sounds both go through.
    When no app uses BlackHole, SoundBar does not touch your microphone.
 
