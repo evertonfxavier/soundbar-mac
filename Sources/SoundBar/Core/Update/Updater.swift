@@ -1,8 +1,10 @@
+import AppKit
 import Combine
 import Foundation
 
-/// Tells the user when a newer release is out. It asks GitHub a few seconds after launch and then every few hours,
-/// unless the user turned that off (it is the one thing the app does by itself on the network).
+/// Tells the user when a newer release is out. It asks GitHub a few seconds after launch, every hour while the app
+/// stays open, and when the user opens the menu (at most every few minutes), unless the user turned that off (it is
+/// the one thing the app does by itself on the network).
 @MainActor
 final class Updater: ObservableObject {
     /// The newer release, when there is one.
@@ -19,9 +21,14 @@ final class Updater: ObservableObject {
         }
     }
 
-    /// How long a result is good for, in seconds, while the app stays open: it can be left open for days, and the
-    /// check is cheap but not free. A launch always asks (the answer is not kept between runs).
-    nonisolated static let interval: TimeInterval = 6 * 3600
+    /// How long a result is good for, in seconds, while the app stays open and nobody looks at it: the app can be
+    /// left open for days, and the check is cheap but not free. A launch always asks (the answer is not kept between
+    /// runs).
+    nonisolated static let interval: TimeInterval = 3600
+
+    /// How long a result is good for when the user opens the menu, which is when a stale answer shows. It keeps
+    /// opening and closing the menu from asking GitHub every time.
+    nonisolated static let openInterval: TimeInterval = 5 * 60
 
     private enum Keys {
         static let enabled = "checkForUpdates"
@@ -32,16 +39,30 @@ final class Updater: ObservableObject {
     private let defaults: UserDefaults
     private var checking = false
     private var timer: Timer?
+    private let notificationCenter: NotificationCenter
+    private var observers: [NSObjectProtocol] = []
 
     init(
         checker: UpdateChecker = UpdateChecker(
             current: AppVersion(AppInfo.version) ?? AppVersion("0.0.0")!,
             fetch: UpdateChecker.live(userAgent: "SoundBar/\(AppInfo.version)")),
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard, notificationCenter: NotificationCenter = .default
     ) {
         self.checker = checker
         self.defaults = defaults
+        self.notificationCenter = notificationCenter
         checksForUpdates = defaults.object(forKey: Keys.enabled) as? Bool ?? true
+        // The menu is a window: when it comes up, or the app comes to the front, the user is looking at the answer.
+        for name in [NSWindow.didBecomeKeyNotification, NSApplication.didBecomeActiveNotification] {
+            observers.append(
+                notificationCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.checkIfDue(interval: Self.openInterval) }
+                })
+        }
+    }
+
+    deinit {
+        for observer in observers { notificationCenter.removeObserver(observer) }
     }
 
     /// Whether a result from `last` is old enough to ask again at `now`.
@@ -51,18 +72,20 @@ final class Updater: ObservableObject {
     }
 
     /// Starts the checks: one a few seconds after launch (not while the app is still starting), whatever the time of
-    /// the last one, then one every few hours while the app stays open.
+    /// the last one, then one every hour while the app stays open.
     func start(launchDelay: TimeInterval = 5) {
         DispatchQueue.main.asyncAfter(deadline: .now() + launchDelay) { [weak self] in
             MainActor.assumeIsolated { self?.checkNow() }
         }
-        timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 15 * 60, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIfDue() }
         }
     }
 
-    func checkIfDue() {
-        guard Self.isDue(last: defaults.object(forKey: Keys.lastCheck) as? Date, now: Date()) else { return }
+    /// Asks if the last answer is older than `interval`.
+    func checkIfDue(interval: TimeInterval = Updater.interval) {
+        guard Self.isDue(last: defaults.object(forKey: Keys.lastCheck) as? Date, now: Date(), interval: interval)
+        else { return }
         checkNow()
     }
 
