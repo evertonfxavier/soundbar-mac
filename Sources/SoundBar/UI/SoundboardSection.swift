@@ -14,33 +14,43 @@ struct SoundboardSection: View {
             .soundboard, title: L.sectionSoundboard.string, count: soundboard.sounds.count,
             trailing: { headerButtons }
         ) {
-            if !soundboard.groups.isEmpty {
-                GroupChips()
+            // Without BlackHole the soundboard is off: say how to turn it on, and show the sounds dimmed.
+            if !soundboard.isAvailable {
+                SoundboardStatus(state: soundboard.state)
             }
 
-            if soundboard.sounds.count > Self.searchThreshold || !soundboard.query.isEmpty {
-                TextField(L.searchSounds.string, text: $soundboard.query)
-                    .textFieldStyle(.roundedBorder)
-                    .controlSize(.small)
-            }
+            VStack(alignment: .leading, spacing: 8) {
+                if !soundboard.groups.isEmpty {
+                    GroupChips()
+                }
 
-            if soundboard.sounds.isEmpty {
-                Text(L.noSoundsYet.string)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 6)
-            } else if soundboard.sounds.count > Self.searchThreshold {
-                ScrollView { grid }.frame(height: 200)
-            } else {
-                grid
-            }
+                if soundboard.sounds.count > Self.searchThreshold || !soundboard.query.isEmpty {
+                    TextField(L.searchSounds.string, text: $soundboard.query)
+                        .textFieldStyle(.roundedBorder)
+                        .controlSize(.small)
+                }
 
-            if !soundboard.sounds.isEmpty {
-                MasterVolumeRow()
-            }
+                if soundboard.sounds.isEmpty {
+                    Text(L.noSoundsYet.string)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 6)
+                } else if soundboard.sounds.count > Self.searchThreshold {
+                    ScrollView { grid }.frame(height: 200)
+                } else {
+                    grid
+                }
 
-            if soundboard.state != .noDriver {
+                if !soundboard.sounds.isEmpty {
+                    MasterVolumeRow()
+                }
+            }
+            .disabled(!soundboard.isAvailable)
+            .allowsHitTesting(soundboard.isAvailable)
+            .opacity(soundboard.isAvailable ? 1 : 0.4)
+
+            if soundboard.isAvailable {
                 Toggle(
                     L.sendToCall.string,
                     isOn: Binding(
@@ -51,12 +61,12 @@ struct SoundboardSection: View {
                 .toggleStyle(.checkbox)
                 .font(.caption)
                 .help(L.sendToCallHelp.string)
-            }
 
-            SoundboardStatus(state: soundboard.state)
+                SoundboardStatus(state: soundboard.state)
 
-            if soundboard.state != .noDriver, soundboard.microphones.count > 1 {
-                MicrophonePicker()
+                if soundboard.microphones.count > 1 {
+                    MicrophonePicker()
+                }
             }
 
             if let message = soundboard.errorMessage {
@@ -109,6 +119,7 @@ struct SoundboardSection: View {
             .help(L.addSound.string)
             .accessibilityLabel(L.addSound.string)
         }
+        .disabled(!soundboard.isAvailable)
     }
 
     private var grid: some View {

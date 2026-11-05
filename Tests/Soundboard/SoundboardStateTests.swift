@@ -30,6 +30,15 @@ struct SoundboardStateTests {
             try board.add(.init(name: name, icon: .emoji("x"), audio: try audio("\(name).wav"), group: group))
         }
 
+        /// The soundboard only plays with the virtual microphone around: this is what the 1 s refresh learns.
+        func installBlackHole() {
+            board.update(
+                processes: [],
+                devices: [
+                    .init(uid: "BlackHole2ch_UID", name: "BlackHole 2ch", hasInput: true, hasOutput: true)
+                ])
+        }
+
         func cleanup() { try? FileManager.default.removeItem(at: folder) }
     }
 
@@ -56,6 +65,41 @@ struct SoundboardStateTests {
         setup.board.setSendsToCall(false)
         #expect(!setup.board.sendsToCall)
         #expect(!Setup(existing: setup.defaults, folder: setup.folder).board.sendsToCall)
+    }
+
+    @Test("without BlackHole the soundboard is off, with it (even before a call) it is on")
+    func availability() {
+        let setup = Setup()
+        defer { setup.cleanup() }
+        let mic = SoundboardRouting.Device(uid: "mic", name: "Microfone", hasInput: true, hasOutput: false)
+        let blackHole = SoundboardRouting.Device(
+            uid: "BlackHole2ch_UID", name: "BlackHole 2ch", hasInput: true, hasOutput: true)
+
+        #expect(!setup.board.isAvailable)
+        setup.board.update(processes: [], devices: [mic])
+        #expect(!setup.board.isAvailable)
+        setup.board.update(processes: [], devices: [mic, blackHole])
+        #expect(setup.board.isAvailable)
+        setup.board.update(processes: [], devices: [mic])
+        #expect(!setup.board.isAvailable)
+    }
+
+    @Test("without BlackHole a sound does not play, not from the menu nor from a shortcut")
+    func offWithoutBlackHole() throws {
+        let setup = Setup()
+        defer { setup.cleanup() }
+        try setup.add("Clap")
+        let sound = setup.board.sounds[0]
+        // A sound whose file is gone cannot play: playing it is how we tell that play() ran.
+        try FileManager.default.removeItem(at: setup.board.library.audioURL(for: sound))
+
+        setup.board.play(sound)
+        setup.board.perform(.sound(sound.id))
+        #expect(setup.board.errorMessage == nil)
+
+        setup.installBlackHole()
+        setup.board.play(sound)
+        #expect(setup.board.errorMessage != nil)
     }
 
     @Test("the call can only be muted while the sounds are going into a call")
@@ -144,6 +188,7 @@ struct SoundboardStateTests {
         try setup.board.add(
             .init(
                 name: "a", icon: .emoji("x"), audio: try setup.audio("a.wav"), trimStart: 5, trimEnd: nil))
+        setup.installBlackHole()
         setup.board.perform(.sound(setup.board.sounds[0].id))
         #expect(setup.board.errorMessage == AudioDecoder.DecodeError.emptyTrim.errorDescription)
     }
